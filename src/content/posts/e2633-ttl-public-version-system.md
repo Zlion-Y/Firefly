@@ -1,13 +1,12 @@
 ---
-title: E2633/E2638 通过 TTL 刷入官方巡天 AX3000 版本
+title: E2633通过 TTL 刷入官方巡天 AX3000 版本
 published: 2026-07-20
-updated: 2026-07-30
-description: 记录 E2633/E2638 通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
+updated: 2026-08-01
+description: 记录 E2633通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
 image: https://www.right.com.cn/forum/data/attachment/forum/202607/22/111254flissfe9fz4f9efe.jpeg
-tags: [E2633, E2638, TTL, u-boot, AX3000, 中兴路由器]
-category: 路由器刷机
+tags: [E2633, TTL, 中兴路由器]
+category: 路由器
 draft: false
-sourceLink: https://www.right.com.cn/forum/thread-8482484-1-1.html
 ---
 
 > [!WARNING] 风险提示
@@ -15,9 +14,9 @@ sourceLink: https://www.right.com.cn/forum/thread-8482484-1-1.html
 
 ## 说明
 
-1. 标题写“理论可行”，是因为原作者实际采用编程器整片写入；后来在刷 WiFi 分区时发现也可以直接通过 u-boot 刷入。
+1. 标题写“理论可行”，是因为一开始采用编程器整片写入，后来在刷 WiFi 分区时发现也可以直接通过 u-boot 刷入。
 2. 由于是整片写入，刷完后默认 WiFi 名称会变为 `ZTE-Q2QHKu`，密码为 `bhdh3954`。
-3. 无线校准数据 WiFi 分区、TAG 分区（SN 和 MAC 信息）都会被覆盖。原作者测试下来影响不大；如果想尽量完美保留这两个分区，可以参考文末的可选步骤。
+3. 无线校准数据 WiFi 分区、TAG 分区（SN 和 MAC 信息）都会被覆盖。但测试下来影响不大；如果想尽量完美保留这两个分区，可以参考文末的可选步骤。
 4. 仅适用于 256 MB 内存、WSON8 封装的版本。
 
 ## 准备工作
