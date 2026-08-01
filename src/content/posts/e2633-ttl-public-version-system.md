@@ -33,17 +33,19 @@ draft: false
 
 快拆可参考原教程中提到的[拆机视频](https://www.bilibili.com/video/BV1ic7y6wE3E/)。
 
-### 2. 连接 TTL
+### 2. 连接 TTL 和网线
 
-参考下图连接 TTL：
+使用网线连接电脑和路由器，参考下图连接 TTL：
 
 ![TTL 接线参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111254flissfe9fz4f9efe.jpeg)
 
 ### 3. 进入 u-boot
 
-连接好后，使用 MobaXterm 等软件打开串口，波特率设置为 `115200`。
+连接好后，使用 MobaXterm 等软件打开串口，波特率设置为 `115200`：
 
-路由器上电后马上按 `1` 中断系统启动，输入密码进入 u-boot（密码来源见[原帖引用资料](https://voz.vn/t/unlock-mesh-zte-e1600-2603-2615-thanh-phien-ban-quoc-te.903294/)）：
+![设置配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221326v8t5l45tv4k66mlj.png)
+
+路由器上电后马上按 `1` 中断系统启动，输入密码进入 u-boot（密码来源见[论坛](https://voz.vn/t/unlock-mesh-zte-e1600-2603-2615-thanh-phien-ban-quoc-te.903294/)）：
 
 ```text
 5cE080@fyBD
@@ -51,14 +53,13 @@ draft: false
 
 ### 4. 配置电脑网络和 TFTP
 
-使用网线连接电脑和路由器，关闭防火墙，将电脑 IPv4 改为手动配置：
+关闭防火墙，将电脑 IPv4 改为手动配置：
 
 - IP 地址：`192.168.10.1`
 - 子网掩码：`255.255.255.0`
 
 设置固件存放目录。此时先不要开启 TFTP 服务。
 
-![电脑 IPv4 配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221326v8t5l45tv4k66mlj.png)
 
 ![TFTP 目录配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221333x8qwa6o5aytx6tki.png)
 
@@ -94,6 +95,8 @@ tftp 0x43000000 e2631_no_oob_full_128MiB.bin
 Bytes transferred = 134217728 (8000000 hex)
 ```
 
+![刷写过程参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111042clhollaa7jdk4xlo.png)
+
 确认无误后，擦除整片 NAND：
 
 ```shell
@@ -106,7 +109,6 @@ nand erase 0x0 0x8000000
 nand write 0x43000000 0x0 0x8000000
 ```
 
-![刷写过程参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111042clhollaa7jdk4xlo.png)
 
 ### 7. 重启
 
