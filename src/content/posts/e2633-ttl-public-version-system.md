@@ -1,10 +1,10 @@
 ---
-title: E2633通过 TTL 刷入官方巡天 AX3000 版本
+title: E2633通过 TTL 刷入中兴官方巡天 AX3000 版本（理论可行）
 published: 2026-07-20
 updated: 2026-08-01
 description: 记录 E2633通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
 image: https://www.right.com.cn/forum/data/attachment/forum/202607/22/111254flissfe9fz4f9efe.jpeg
-tags: [E2633, TTL, 中兴路由器]
+tags: [E2633, TTL]
 category: 路由器
 draft: false
 ---
@@ -22,16 +22,16 @@ draft: false
 ## 准备工作
 
 - USB 转 TTL 模块 CH340G 一个，最好带杜邦线，方便连接。
-- 由编程器固件去掉 OOB 后生成的 [128 MB 镜像](https://wwbnc.lanzoub.com/idNc33xkhc4f)。原教程中编程器固件来自 [hzw521](https://www.right.com.cn/forum/thread-8472425-1-1.html)。
-- MobaXterm 等串口工具。
-- TFTP 服务工具。
+- 由编程器固件去掉 OOB 后生成的 [128 MB 镜像](https://wwbnc.lanzoub.com/idNc33xkhc4f)。编程器固件来自 [hzw521](https://www.right.com.cn/forum/thread-8472425-1-1.html)。
+- MobaXterm 等串口连接工具。
+- TFTP 服务工具（MobaXterm自带）。
 - 网线一根。
 
 ## 操作步骤
 
 ### 1. 拆机
 
-快拆可参考原教程中提到的[拆机视频](https://www.bilibili.com/video/BV1ic7y6wE3E/)。
+快拆可参考[拆机视频](https://www.bilibili.com/video/BV1ic7y6wE3E/)。
 
 ### 2. 连接 TTL 和网线
 
@@ -41,7 +41,7 @@ draft: false
 
 ### 3. 进入 u-boot
 
-连接好后，使用 MobaXterm 等软件打开串口，波特率设置为 `115200`：
+连接好后，使用 MobaXterm 软件进行串口连接，波特率设置为 `115200`：
 
 ![设置配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221326v8t5l45tv4k66mlj.png)
 
@@ -79,7 +79,7 @@ ping 192.168.10.1
 host 192.168.10.1 is alive
 ```
 
-此时再开启前面配置好的 TFTP 服务。
+此时再启动前面配置好的 TFTP 服务。
 
 ### 6. 通过 TFTP 传输并刷写固件
 
@@ -95,7 +95,7 @@ tftp 0x43000000 e2631_no_oob_full_128MiB.bin
 Bytes transferred = 134217728 (8000000 hex)
 ```
 
-![刷写过程参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111042clhollaa7jdk4xlo.png)
+![传输文件参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111042clhollaa7jdk4xlo.png)
 
 确认无误后，擦除整片 NAND：
 
