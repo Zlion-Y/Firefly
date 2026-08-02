@@ -3,7 +3,7 @@ title: E2633通过 TTL 刷入中兴官方巡天 AX3000 版本（理论可行）
 published: 2026-07-20
 updated: 2026-08-01
 description: 记录 E2633通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
-image: https://www.right.com.cn/forum/data/attachment/forum/202607/22/111254flissfe9fz4f9efe.jpeg
+image: ./cover.png
 tags: [E2633, TTL]
 category: 路由器
 draft: false
