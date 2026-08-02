@@ -7,6 +7,7 @@ tags: [创维盒子, ADB]
 category: 玩机工具
 image: ./cover.png
 draft: false
+slug: skyworth-adb-web
 ---
 
 > [!WARNING] 免责说明

@@ -7,6 +7,7 @@ image: ./cover.png
 tags: [E2633, TTL]
 category: 路由器
 draft: false
+slug: e2633-to-public-system
 ---
 
 > [!WARNING] 风险提示
