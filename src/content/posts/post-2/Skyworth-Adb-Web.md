@@ -5,7 +5,7 @@ updated: 2026-07-30
 description: 介绍创维盒子ADB动态密码的生成算法，和一个在线计算网页。
 tags: [创维盒子, ADB]
 category: 玩机工具
-image：./cover.png
+image: ./cover.png
 draft: false
 ---
 
