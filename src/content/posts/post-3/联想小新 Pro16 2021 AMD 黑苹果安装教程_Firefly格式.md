@@ -51,11 +51,11 @@ slug: lenovo-pro16-2021-amd-hackintosh
 
 ![图 2：ESP调整](./lenovo-pro16-2021-amd-hackintosh-figure-02.png)
 
-*图 2：ESP调整*
-
 ---
 
 ## 2. 制作启动 U 盘
+
+### 2.1 写入镜像
 
 准备一个大于 `16 GB` 的 U 盘，使用 balenaEtcher 写入 macOS 镜像。
 
@@ -66,17 +66,16 @@ slug: lenovo-pro16-2021-amd-hackintosh
 
 
 
-### 2.1 放置 EFI 文件
+### 2.2 处理 EFI 文件
 
 1. 使用 OCAT 打开 `EFI/OC/config.plist`。
 2. 取消勾选 `Nootedred.kext`，保存配置。
 
 ![图 3：取消勾选 `Nootedred.kext`](./lenovo-pro16-2021-amd-hackintosh-figure-03.jpeg)
 
-*图 3：取消勾选 `Nootedred.kext`*
 
-3. 打开 DiskGenius，选中 U 盘的 EFI 分区。
-4. 将调整后的 EFI 文件夹完整复制进去，最终路径应类似：
+1. 打开 DiskGenius，选中 U 盘的 EFI 分区。
+2. 将调整后的 EFI 文件夹完整复制进去，最终路径应类似：
 
 ```text
 EFI(X:)/EFI/OC
@@ -96,20 +95,17 @@ EFI(X:)/EFI/OC
 
 ![图 4：OpenCore 启动菜单](./lenovo-pro16-2021-amd-hackintosh-figure-04.jpeg)
 
-*图 4：OpenCore 启动菜单*
 
 ![图 5：代码加载界面](./lenovo-pro16-2021-amd-hackintosh-figure-05.jpeg)
 
-*图 5：代码加载界面*
 
-5. 打开「磁盘工具」。
-6. 选中之前划出的 macOS 分区，点击「抹掉」。
-7. 格式选择 `APFS`，完成后返回实用工具界面。
-8. 选择「安装 macOS」，按提示继续安装。
+1. 打开「磁盘工具」。
+2. 选中之前划出的 macOS 分区，点击「抹掉」。
+3. 格式选择 `APFS`，完成后返回实用工具界面。
+4. 选择「安装 macOS」，按提示继续安装。
 
 ![图 6：macOS 实用工具](./lenovo-pro16-2021-amd-hackintosh-figure-06.jpeg)
 
-*图 6：macOS 实用工具*
 
 
 
@@ -133,11 +129,9 @@ EFI(X:)/EFI/OC
 
 ![去掉启动界面跑码参数](./lenovo-pro16-2021-amd-hackintosh-figure-11.jpg)
 
-*去掉启动界面跑码参数*
 
 ![图 7：正常开机无跑码](./lenovo-pro16-2021-amd-hackintosh-figure-07.jpeg)
 
-*图 7：正常开机无跑码*
 
 
 
@@ -146,7 +140,6 @@ EFI(X:)/EFI/OC
 
 ![图 8：OCAT 调整 序列号](./lenovo-pro16-2021-amd-hackintosh-figure-08.png)
 
-*图 8：OCAT 调整 序列号*
 
 ---
 
@@ -166,10 +159,9 @@ ESP/EFI/
 
 ![图 9：硬盘 ESP 中的 OC 文件夹](./lenovo-pro16-2021-amd-hackintosh-figure-09.png)
 
-*图 9：硬盘 ESP 中的 OC 文件夹*
 
-4. 在 DiskGenius 工具栏选择「设置 UEFI BIOS 启动项」。
-5. 点击「添加」，按以下路径选中 `OpenCore.efi`：
+1. 在 DiskGenius 工具栏选择「设置 UEFI BIOS 启动项」。
+2. 点击「添加」，按以下路径选中 `OpenCore.efi`：
 
 ```text
 ESP/EFI/OC/OpenCore.efi
@@ -180,7 +172,6 @@ ESP/EFI/OC/OpenCore.efi
 
 ![图 10：添加 OpenCore UEFI 启动项](./lenovo-pro16-2021-amd-hackintosh-figure-10.png)
 
-*图 10：添加 OpenCore UEFI 启动项*
 
 > [!TIP] 建议
 > 日常默认进入 macOS；需要进入 Windows 时，开机按 `F12` 手动选择 Windows 启动项。
