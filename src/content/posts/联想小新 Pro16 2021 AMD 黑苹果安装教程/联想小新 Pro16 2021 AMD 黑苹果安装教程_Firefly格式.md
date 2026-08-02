@@ -183,7 +183,7 @@ ESP/EFI/OC/OpenCore.efi
 1. 2021 款小新 Pro16 存在网卡限制：自带有线网卡无法驱动，不能直插网线。
 2. 可通过 USB 网卡或手机 USB 网络共享上网，iPhone 通常无需额外驱动。
 3. 不要在 macOS 内直接在线更新系统大版本，否则可能导致无法开机或引导失效。
-4. 如需交流，可加入 QQ 群：`https://qm.qq.com/q/y1tjknEfcG`。
+4. 如需交流，可加入 QQ 群：[https://qm.qq.com/q/y1tjknEfcG](https://qm.qq.com/q/y1tjknEfcG)。
 
 ---
 
