@@ -629,13 +629,14 @@ const hasMultipleImages =
                         </div>
                     )}
                     {backgroundWallpaper.common?.homeText?.subtitle && (
-                        <div id="banner-subtitle" class="banner-subtitle text-white/90 leading-snug" style={{ fontSize: backgroundWallpaper.common.homeText.subtitleSize || "1.5rem" }} data-subtitles={JSON.stringify(backgroundWallpaper.common.homeText.subtitle)}>
+                        <div id="banner-subtitle" class="banner-subtitle text-white/90 leading-snug" style={{ fontSize: backgroundWallpaper.common.homeText.subtitleSize || "1.5rem" }} data-subtitles={JSON.stringify(backgroundWallpaper.common.homeText.subtitle)} data-subtitle-api={backgroundWallpaper.common.homeText.subtitleApi}>
                             {backgroundWallpaper.common.homeText.typewriter?.enable ? (
                                 <TypewriterText
                                     text={backgroundWallpaper.common.homeText.subtitle}
                                     speed={backgroundWallpaper.common.homeText.typewriter.speed}
                                     deleteSpeed={backgroundWallpaper.common.homeText.typewriter.deleteSpeed}
                                     pauseTime={backgroundWallpaper.common.homeText.typewriter.pauseTime}
+                                    apiUrl={backgroundWallpaper.common.homeText.subtitleApi}
                                 />
                             ) : (
                                 randomSubtitle
@@ -653,10 +654,11 @@ const hasMultipleImages =
             if (!subtitleElement) return;
 
             const subtitlesData = subtitleElement.dataset.subtitles;
-            if (!subtitlesData) return;
+            const apiUrl = subtitleElement.dataset.subtitleApi;
+            if (!subtitlesData && !apiUrl) return;
 
             try {
-                const subtitles = JSON.parse(subtitlesData);
+                const subtitles = subtitlesData ? JSON.parse(subtitlesData) : [];
                 // Only randomize if it's an array and typewriter is NOT enabled (check for typewriter class)
                 if (Array.isArray(subtitles) && subtitles.length > 0 && !subtitleElement.querySelector('.typewriter')) {
                     // Use a global variable to persist the subtitle across Swup navigations
@@ -669,6 +671,28 @@ const hasMultipleImages =
                 }
             } catch (e) {
                 console.error("Failed to parse subtitles", e);
+            }
+
+            if (apiUrl && !subtitleElement.querySelector('.typewriter')) {
+                if (window.fireflyCachedApiSubtitle) {
+                    subtitleElement.textContent = window.fireflyCachedApiSubtitle;
+                    return;
+                }
+
+                fetch(apiUrl, { headers: { Accept: "application/json" } })
+                    .then((response) => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then((data) => {
+                        const text = typeof data === "string" ? data : data?.hitokoto;
+                        if (!text) throw new Error("API response does not contain hitokoto");
+                        window.fireflyCachedApiSubtitle = text;
+                        subtitleElement.textContent = text;
+                    })
+                    .catch((error) => {
+                        console.warn("Failed to load subtitle API, using fallback text.", error);
+                    });
             }
         }
 
