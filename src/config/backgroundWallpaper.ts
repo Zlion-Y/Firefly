@@ -80,7 +80,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 				"正在获取一言……",
 			],
 			// 主页横幅副标题 API（请求失败时使用上面的 subtitle 作为备用文本）
-			subtitleApi: "https://v1.hitokoto.cn/?encode=json",
+			subtitleApi: "https://v1.hitokoto.cn/?c=f?encode=json",
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
 			typewriter: {
