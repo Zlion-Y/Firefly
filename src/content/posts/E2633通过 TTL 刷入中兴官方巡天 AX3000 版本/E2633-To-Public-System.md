@@ -1,24 +1,31 @@
 ---
-title: E2633通过 TTL 刷入中兴官方巡天 AX3000 版本（实操可行）
+title: E2633刷入中兴官方AX3000 版本（U-Boot篇）
 published: 2026-07-20
-updated: 2026-08-01
-description: 记录 E2633通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
+updated: 2026-08-04
+description: 记录 E2633通过 TTL 进入 U-Boot 后，使用 Nand Write 官方巡天 AX3000 版本固件的流程。
 image: ./cover.png
-tags: [E2633, TTL]
+tags: [E2633, TTL，U-Boot]
 category: 路由器
 draft: false
 slug: e2633-to-public-system
+author: zlion
 ---
 
-> [!WARNING] 风险提示
-> 本教程涉及刷写 NAND 闪存，存在变砖风险。请自行评估风险后操作。内容仅适用于 256 MB 内存、WSON8 封装版本。
+> [!WARNING] 免责声明与使用约定
+> 1. 本教程及随附的全部工具仅供技术研究、学习交流和维护本人拥有的设备使用，不构成任何形式的商业服务、质量保证或操作承诺。
+> 2. **禁止以任何形式出售、打包收费、付费分发、引流获利，或将本教程及随附工具用于其他商业获利行为。**
+> 3. 对教程、文档或工具进行二次修改、转载和再分发时，必须保留原作者 `zlion`、原始版权说明及本免责声明，并明确标注原始来源；不得删除署名、冒充原创或以修改版本替代原始来源。
+> 4. 固件刷写、分区读写、Telnet、TTL、U-Boot 和 MTD 操作均可能造成数据丢失、设备变砖、网络中断、保修失效或其他不可预期后果。**请对自己的设备和全部操作结果负责并自行承担风险。**
+> 5. 不保证本文内容和工具适用于所有机型、硬件批次或固件版本；在法律允许的范围内，作者不对因使用、误用或依赖本文内容造成的直接或间接损失承担责任。
+> 6. 使用者必须遵守所在地适用的法律法规、网络安全规定、电信管理要求、知识产权规则及设备服务协议，不得用于未经授权的访问、破坏、规避安全机制或侵犯第三方权益。
+> 7. 教程中涉及的固件、商标、产品名称及第三方程序，其权利归各自权利人所有。如本文内容存在侵权、错误引用或其他权益问题，请联系作者核实；确认后将及时删除或修正相关内容。
 
 ## 说明
 
-1. 一开始采用编程器整片写入，后来在刷 WiFi 分区时发现也可以直接通过 u-boot 刷入。
-2. 由于是整片写入，刷完后默认 WiFi 名称会变为 `ZTE-Q2QHKu`，密码为 `bhdh3954`。
-3. 无线校准数据 WiFi 分区、TAG 分区（SN 和 MAC 信息）都会被覆盖。但测试下来影响不大；如果想尽量完美保留这两个分区，可以先开telnet将这两个分区提取出来，后面在通过telnet刷入。
-4. 仅适用于 256 MB 内存、WSON8 封装的版本。
+1. 由于是全分区整片写入，刷完后默认 WiFi 名称会变为 `ZTE-Q2QHKu`，密码为 `bhdh3954`。
+2. 所有内容仅适用于 256 MB 内存、WSON8 封装版本。
+3. 本教程会覆盖你的所有分区，无法找回，若想保留，请先参考Telnet篇备份两个关键分区：tag、wifi。
+4. 若在TFTP传输中失败，可能是传输速度太慢，超出了MobaXterm未注册版本的开启时长限制，此问题自行解决。
 
 ## 准备工作
 
@@ -38,15 +45,15 @@ slug: e2633-to-public-system
 
 使用网线连接电脑和路由器，参考下图连接 TTL：
 
-![TTL 接线参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111254flissfe9fz4f9efe.jpeg)
+![TTL 接线参考](./TTL.png)
 
-### 3. 进入 u-boot
+### 3. 进入 U-Boot
 
 连接好后，使用 MobaXterm 软件进行串口连接，波特率设置为 `115200`：
 
-![设置配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221326v8t5l45tv4k66mlj.png)
+![设置配置参考](./MXSetting.png)
 
-路由器上电后马上按 `1` 中断系统启动，输入密码进入 u-boot（密码来源见[论坛](https://voz.vn/t/unlock-mesh-zte-e1600-2603-2615-thanh-phien-ban-quoc-te.903294/)）：
+路由器上电后马上按 `1` 中断系统启动，输入密码进入 U-Boot（密码来源见[论坛](https://voz.vn/t/unlock-mesh-zte-e1600-2603-2615-thanh-phien-ban-quoc-te.903294/)）：
 
 ```text
 5cE080@fyBD
@@ -62,7 +69,7 @@ slug: e2633-to-public-system
 设置固件存放目录。此时先不要开启 TFTP 服务。
 
 
-![TFTP 目录配置参考](https://www.right.com.cn/forum/data/attachment/forum/202607/20/221333x8qwa6o5aytx6tki.png)
+![TFTP 目录配置参考](./TFTP.png)
 
 ### 5. 在串口终端设置 IP
 
@@ -96,12 +103,20 @@ tftp 0x43000000 e2631_no_oob_full_128MiB.bin
 Bytes transferred = 134217728 (8000000 hex)
 ```
 
-![传输文件参考](https://www.right.com.cn/forum/data/attachment/forum/202607/22/111042clhollaa7jdk4xlo.png)
+![传输文件参考](./Transfer.png)
 
 确认无误后，擦除整片 NAND：
 
 ```shell
 nand erase 0x0 0x8000000
+```
+
+应当看到以下输出
+
+```text
+NAND erase: device 0 whole chip
+Erasing at 0x7fe0000 -- 100% complete.
+OK
 ```
 
 然后一次性写入整片：
@@ -110,6 +125,12 @@ nand erase 0x0 0x8000000
 nand write 0x43000000 0x0 0x8000000
 ```
 
+应当看到以下输出
+
+```text
+NAND write: device 0 whole chip
+ 134217728 bytes written: OK
+```
 
 ### 7. 重启
 
@@ -119,10 +140,28 @@ nand write 0x43000000 0x0 0x8000000
 reset
 ```
 
-## 可选：保留原机 tag 和 wifi 分区
+此时还可以在串口终端中看到系统启动的日志：
 
-如果想保留原机的 tag 与 wifi 分区，可以在一开始就通过telnet提取这两个分区，然后再使用cat命令写入WiFi分区，用mtd_write_tag_armv7程序写入tag分区。程序可以看我这一篇帖子：
-[使用 mtd_write_tag 刷写 ZTE TAG 分区](https://zlion.top/posts/zte-tag-mtd-write-flashing-guide/)
+```text
+Boot SPI NAND
+start read bootheader
+start read secondboot
+non secure boot
+Jump
 
+enter bootloader...
+crpm init enter
+crpm init done
+ddr init enter, rate is 1333 Mbps
+5ddr init done
+serial init start
+serial init done
+SPI NAND
+non secure uboot
+backup header!!
+Jump
 
+.............
 ```
+
+最后停在`Starting kernel ...`代表系统已经成功启动。
