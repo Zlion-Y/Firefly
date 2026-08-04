@@ -1,9 +1,9 @@
 ---
-title: 从U-Boot到Telnet研究中兴巡天AX3000（Telnet篇）
+title: E2633转正官方版优化分析（Telnet篇）
 published: 2026-08-04
 updated: 2026-08-04
-description: 中兴巡天AX3000 从配置文件config.bin的 Type-4 解密、Telnet 开启、Tag 处理、Web 固件上传到双槽 fw-flashing 的完整分析、命令、失败尝试和通用工具。
-tags: [ZTE, ZXHN, E1630, E2631, 固件, Type-4, Telnet, NAND, fw-flashing]
+description: E2633刷入官方公版后的config.bin解密、本机信息优化、本地Web上传固件和官方系统升级研究部分。
+tags: [E2631,  Telnet, fw-flashing]
 category: 路由器
 draft: true
 pinned: false
@@ -11,241 +11,62 @@ slug: e2631-research-telnet
 author: zlion
 ---
 
-> 本文面向拥有自有 ZTE ZXHN 设备、能够通过 TTL 或 Telnet 维护设备的用户，记录一次完整的固件研究过程。
-> **适用平台：** ZXHN E1630（256MB）/E2633/E2638/E2631.
-> **重要边界：** 本文不把推断写成结论，不推荐直接写 Bootloader 或整片 NAND。涉及配置、序列号、MAC、账号密码和固件的内容，只应在自己的设备上使用。
-
-> [!WARNING] 免责声明与使用约定
+> [!CAUTION] 免责声明与使用约定
 > 1. 本教程及随附的全部工具仅供技术研究、学习交流和维护本人拥有或已获明确授权的设备使用，不构成任何形式的商业服务、质量保证或操作承诺。
 > 2. **禁止以任何形式出售、打包收费、付费分发、引流获利，或将本教程及随附工具用于其他商业获利行为。**
 > 3. 对教程、文档或工具进行二次修改、转载和再分发时，必须保留原作者 `zlion`、原始版权说明及本免责声明，并明确标注原始来源；不得删除署名、冒充原创或以修改版本替代原始来源。
-> 4. 固件刷写、分区读写、Telnet、TTL、U-Boot 和 MTD 操作均可能造成数据丢失、设备变砖、网络中断、保修失效或其他不可预期后果。操作者应自行核对机型、硬件版本、分区布局、文件哈希和恢复条件，**对自己的设备和全部操作结果负责并自行承担风险。**
-> 5. 教程作者不保证本文内容和工具适用于所有机型、硬件批次或固件版本；在法律允许的范围内，作者不对因使用、误用或依赖本文内容造成的直接或间接损失承担责任。
+> 4. 固件刷写、分区读写、Telnet和 MTD 操作均可能造成数据丢失、设备变砖、网络中断、保修失效或其他不可预期后果。**操作者应对自己的设备和全部操作结果负责并自行承担风险。**
+> 5. 教程作者不保证本文内容和工具适用于所有机型、硬件批次或固件版本。
 > 6. 使用者必须遵守所在地适用的法律法规、网络安全规定、电信管理要求、知识产权规则及设备服务协议，不得用于未经授权的访问、破坏、规避安全机制或侵犯第三方权益。
 > 7. 教程中涉及的固件、商标、产品名称及第三方程序，其权利归各自权利人所有。如本文内容存在侵权、错误引用或其他权益问题，请联系作者核实；确认后将及时删除或修正相关内容。
 
-## 目录
-
-1. [最终结论](#1-最终结论)
-2. [设备与工具环境](#2-设备与工具环境)
-3. [第一部分：config 解密与 Telnet](#3-第一部分config-解密与-telnet)
-4. [第二部分：Tag、OOB 与 MTD](#4-第二部分tagoob-与-mtd)
-5. [第三部分：Web 上传研究](#5-第三部分web-上传研究)
-6. [第四部分：fw-flashing 与双槽启动](#6-第四部分fw-flashing-与双槽启动)
-7. [第三方固件对比](#7-第三方固件对比)
-8. [完整试错记录](#8-完整试错记录)
-9. [通用脚本与操作说明](#9-通用脚本与操作说明)
-10. [故障排查](#10-故障排查)
-11. [风险边界与推荐流程](#11-风险边界与推荐流程)
 
 ---
 
-## 1. 最终结论
+## 1. Config.bin的加解密与Telnet开启
 
-### 1.1 config
+### 1.1 Config.bin的加解密
 
-- `config (*.bin)` 是 ZTE Type-4 外层容器，不是普通明文 XML。
-- 本次 E1630/E2631 样本使用 AES-256-CBC，参数如下：
+`config.bin` 不是明文 XML，而是 ZTE 的 Type-4 外层容器。E2631 中使用的是 AES-256-CBC。
 
-```text
-keySeed = E2631Key13515211
-ivSeed  = E2631Iv13515211
-key     = SHA256(keySeed)
-iv      = SHA256(ivSeed)[0:16]
-padding = 关闭，尾部零填充到 AES 块边界
+| 参数 | 值 |
+|------|------|
+| `keySeed` | `E2631Key13515211` |
+| `ivSeed` | `E2631Iv13515211` |
+| `key` | `SHA256(keySeed)` |
+| `iv` | `SHA256(ivSeed)` 取前 16 字节 |
+| 填充 | 关闭，尾部补零到 AES 块边界 |
+
+解包流程如下：
+
+```mermaid
+graph TD
+    A[config.bin Type-4 外层容器] --> B[AES-256-CBC 解密]
+    B --> C[Type-0 内层容器]
+    C --> D[zlib 解压]
+    D --> E[最终 XML]
 ```
 
-- 解密后是 Type-0 内层容器，chunk 使用 zlib，最终内容为 XML。
-- 开 Telnet 要同时修改 `PortControl` 和 `TelnetCfg`。
-- 输出必须重新解密回读，并与修改后的 XML 做字节级比较。
+回写流程如下：
 
-### 1.2 Tag 与 NAND
-
-- Tag 是私有记录表，不是文件系统，不能 `mount`。
-- NAND 页面为 `2048` 字节数据加 `64` 字节 OOB，擦除块为 `131072` 字节。
-- `cat > /dev/mtd2` 或 `cat > /dev/mtdblock2` 未写入成功，最终以读回 MD5 不一致确认。
-- 成功方法是 ARMv7 静态 MTD ioctl 工具：擦除、写入、逐字节回读。
-- `fsync: Invalid argument` 可能只是驱动不支持该同步调用；只能以工具读回验证和独立 MD5 为准。
-
-### 1.3 Web 上传
-
-- 隐藏 Web 页面调用真实升级接口，但 `httpd` 对请求体存在较小上限。
-- 约 300 KiB 文件可发完；约 320 KiB 以上开始连接重置。官方 22,413,844 字节包不适合走该页面。
-- `SessionTimeout` 是业务会话问题，`ERR_CONNECTION_RESET` 是连接层问题，不能混为一谈。
-
-### 1.4 fw-flashing
-
-- `/bin/fw_flashing -f FILE` 使用带升级头的小包，不是 128 MiB 全片镜像。
-- 实验中它把官方包写入备用高槽 `0x02300000`，之后设备从高槽成功启动。
-- 平台至少有低槽 `0x00700000` 和高槽 `0x02300000`，高槽边界为 `0x03f00000`。
-- 已确认有 Magic、版本、板型、VID、uImage/CRC、范围、写后回读等检查；RSA 验证的准确位置仍未确认。
-- 双槽和 `IsBad` 字段已确认，但自动回退没有故意破坏固件验证，不能承诺一定会发生。
-
----
-
-## 2. 设备与工具环境
-
-### 2.1 已确认信息
-
-```text
-Linux 4.1.25 / armv7l / Buildroot 2015.08.1
-CPU ZX279128R
-RAM 256M
-SPI NAND 128MiB
-Page 2048 / OOB 64 / Erase 131072
-路由器 192.168.5.1
-电脑/TFTP 192.168.5.7
+```mermaid
+graph TD
+    A[修改后的 XML] --> B[zlib 压缩]
+    B --> C[封装 Type-0 内层容器]
+    C --> D[AES-256-CBC 加密]
+    D --> E[写回 config.bin]
 ```
 
-过程中还使用过 `192.168.5.6` 和 `192.168.10.4`，命令中的 IP 必须按当前网卡修改。
+### 1.2 修改Config.bin开启Telnet
 
-### 2.2 典型分区表
-
-曾从目标设备读到：
-
-```text
-dev:    size      erasesize  name
-mtd0:   08000000  00020000   Whole flash
-mtd1:   00100000  00020000   Bootloader
-mtd2:   00100000  00020000   tag
-mtd3:   00100000  00020000   wifi
-mtd4:   00200000  00020000   usercfg
-mtd5:   00200000  00020000   defcfg
-mtd6:   00340000  00020000   kernel1
-mtd7:   00340000  00020000   kernel2
-mtd8:   01660000  00020000   rootfs
-mtd9:   00500000  00020000   UUPlugin
-mtd10:  000a0000  00020000   owdptsbin
-mtd11:  00500000  00020000   status
-mtd12:  00300000  00020000   DPIPlugin
-```
-
-官方包刷写后，rootfs 大小和后续插件分区可能变化，曾见到 `mtd8=0x01220000`、`UNIFIED` 和 `JDXBPLUGIN`。因此不能把旧分区表硬编码到新设备；每次操作前重新读取 `/proc/mtd`。
-
-### 2.3 路由器只读采集
-
-```sh
-uname -a
-
-cat /proc/version
-
-cat /proc/cmdline
-
-cat /proc/mtd
-
-cat /proc/capability/boardtype
-
-df -k /tmp /var/tmp
-```
-
-BusyBox TFTP：
-
-```sh
-# 电脑到路由器
-tftp -g -l /tmp/file.bin -r file.bin 192.168.5.7
-
-# 路由器到电脑
-tftp -p -l /tmp/file.bin -r file.bin 192.168.5.7
-```
-
-研究 Web/config 时曾提取目标机自己的二进制和配置材料：
-
-```sh
-tftp -p -l /bin/cspd -r E1630-cspd 192.168.5.7
-
-tftp -p -l /bin/httpd -r E1630-httpd 192.168.5.7
-
-tftp -p -l /bin/fw_flashing -r E1630-fw_flashing 192.168.5.7
-
-tftp -p -l /etc/enhardcodefile -r enhardcodefile 192.168.5.7
-
-tftp -p -l /etc/enwebdhardcodefile -r enwebdhardcodefile 192.168.5.7
-
-tftp -p -l /etc/hardcode -r hardcode 192.168.5.7
-
-tftp -p -l /lib/libhardcode.so -r libhardcode.so 192.168.5.7
-
-tftp -p -l /lib/libsha256.so -r libsha256.so 192.168.5.7
-
-tftp -p -l /lib/libtagparam.so -r libtagparam.so 192.168.5.7
-```
-
-实际路径可能位于 `/kmodule/bin` 或其他目录。先用 `ls -l /proc/PID/exe` 确认正在运行的二进制，再比较 MD5，避免分析错副本。
-
-### 2.4 哈希
-
-Windows CMD：
-
-```bat
-certutil -hashfile fw.bin MD5
-
-certutil -hashfile fw.bin SHA256
-```
-
-Linux/Armbian：
-
-```sh
-md5sum fw.bin
-
-sha256sum fw.bin
-```
-
----
-
-## 3. 第一部分：config 解密与 Telnet
-
-### 3.1 只使用目标机文件
-
-早期参考过 H3600P、E2631/E2638 文章和 `ztetool.py`。这些内容只能提供格式线索，不能证明密钥、Tag、分区和升级策略相同。后续研究停止使用参考机文件，改为目标设备自己的 `config`、`cspd`、`httpd`、`fw_flashing` 和硬编码文件。
-
-备份后先记录哈希：
-
-```bat
-certutil -hashfile config.bin SHA256
-```
-
-### 3.2 识别和解密 Type-4
-
-Type-4 开头：
-
-```text
-magic = 0x01020304
-type  = 4
-```
-
-只读检查：
-
-```bash
-node common-tools/zte_type4_config_tool.js inspect config.bin
-```
-
-解密：
-
-```bash
-node common-tools/zte_type4_config_tool.js decrypt config.bin config.xml --profile e2631
-```
-
-内部流程：
-
-1. 读取 Type-4 外层 chunk。
-2. 用 SHA256 派生 AES key/IV，对每个 payload 做 AES-256-CBC 解密。
-3. 检查内层 `0x01020304 / type 0`。
-4. 校验内层 header CRC32 和压缩 payload CRC32。
-5. 对 zlib chunk 解压，检查每块长度和 XML 总长度。
-
-任何 Magic、CRC、长度或 zlib 失败都必须停止。
-
-### 3.3 Telnet 的两个修改点
-
+这里提供一个一键开启Telnet脚本[config_telnet_tool.zip](https://wwbnc.lanzoub.com/iQRhI40ks1ze)
+其中也包含解、加密脚本，可以自行研究，解包得到可修改的XML文件，在打包回去使用。
 `PortControl` 中 TELNET 行：
-
 ```xml
 <DM name="ServName" val="TELNET"/>
 <DM name="PortEnable" val="1"/>
 ```
-
 `TelnetCfg` 中启用 LAN、关闭 WAN：
-
 ```xml
 <Tbl name="TelnetCfg" RowCount="1">
   <Row No="0">
@@ -259,92 +80,87 @@ node common-tools/zte_type4_config_tool.js decrypt config.bin config.xml --profi
 </Tbl>
 ```
 
-自动修改、加密、回读：
+> [!CAUTION] 注意
+> 本工具由 zlion 原创，首发于 zlion.top
+> 禁止二次修改、倒卖、打包收费或用于任何商业盈利行为，转载须保留完整出处及作者署名。
 
-```bash
-node common-tools/zte_type4_config_tool.js enable-telnet config.bin config-telnet-enable.bin --profile e2631 --user admin --password admin --xml-output config-telnet-enable.xml
-```
+> [!WARNING] 使用说明
+> 1. 将 config-telnet-enable.bat、zte_config_telnet_enable.js 和 config.bin 放在同一个目录。
+> 2. 双击 config-telnet-enable.bat。
+> 3. 成功后，同目录会生成 config-telnet-enable.bin。
+> 4. Telnet 端口为 23，账号和密码均为 admin。
+> 
+> 运行环境：
+> 1. 完整工具包已经附带 node.exe，无需安装 Node.js 或 Python。
+> 2. 请勿单独移动 BAT；config-telnet-enable.bat、zte_config_telnet_enable.js 和 node.exe 必须放在一起。
+> 3. 不支持的配置会显示“config文件暂不适配”，且不会保留输出文件
 
-工具会确认两类表都存在，并在输出后重新解密。如果回读 XML 不一致，不会报告成功。
 
-### 3.4 Windows 双击脚本
 
-将下列文件放在同一目录：
 
-```text
-config.bin
-zte_type4_config_tool.js
-enable_telnet_admin.bat
-```
 
-双击 `enable_telnet_admin.bat`。它检查输入、工具、`node.exe`、退出码和输出文件。成功生成：
 
-```text
-config-telnet-enable.bin
-账号 admin
-密码 admin
-端口 23，仅开启 LAN
-```
 
-没有安装 Node.js 时，可以把可信来源的 `node.exe` 放在脚本目录。BAT 本身不能原生完成 AES、SHA256、zlib 和 CRC；它只是稳定启动处理程序并保留错误窗口。
 
-### 3.5 本次配置样本产物
 
-期间处理过多个目标设备备份，工作区中保留了类似以下文件：
+## 2. 本机信息优化
 
-```text
-outputs/config15-telnet-root.bin
-outputs/config16-telnet-root.bin
-outputs/config17-telnet-root.bin
-outputs/config15-telnet-root-verify.xml
-outputs/config16-telnet-root-verify.xml
-outputs/config17-telnet-root-verify.xml
-```
+> [!NOTE] 本节提醒
+> 适用于想用U-BOOT刷写全片且保留自身设备信息和无线数据分区
+> 适用于刷了三方固件无法绑定APP（未验证APP端是否只检测设备型号，仅猜测）
 
-早期曾测试 `root/root`，后续通用 BAT 默认使用 `admin/admin`。两套输出不能混淆，导入前必须解密 XML 检查实际账号。`config16-telnet-root.bin` 和 `config17-telnet-root.bin` 的历史输出 SHA256 分别为：
 
-```text
-config16: 56492433c67efc3157d5ffe42a3e8d90a2f6a68764c1983f1fbeb53cc85a84d0
-config17: caed8d8b75f5e90d999a84a2ed1097ff8d530fb8af90eb67b2260775af51bdf2
-```
+### 2.1 Tag 、Wifi 分区读取
 
-这些哈希只用于识别本次历史产物，不是通用校验值。任何新配置都应重新计算。
-
-### 3.6 config 试错
-
-#### `sendcmd cspd hcget` 没有取到 key
+在路由器 Telnet 终端执行：
 
 ```sh
-sendcmd cspd hcget /etc/enhardcodefile E2631.Cfg.AESKey
-
-sendcmd cspd hcget /etc/enhardcodefile E2631.Cfg.AESIv
+cat /proc/mtd
 ```
-
-返回的是 `cspd.dbd_task.DB` 帮助，不是 key/IV。原因可能是命令路由、进程名或参数不匹配，不能据此认定硬编码项不存在。
-
-#### 只改一张表无效
-
-只改 `TelnetCfg` 或只改 `PortControl` 都可能导致 Telnet 不启动。最终工具把两处作为强制条件。
-
-#### BAT 闪退
-
-原因包括工作目录错误、Node 不存在、错误输出被隐藏和编码问题。修正为 `%~dp0` 定位目录、保留错误输出、失败 `pause`、删除不完整输出。
-
----
-
-## 4. 第二部分：Tag、OOB 与 MTD
-
-### 4.1 Tag 读取与结构
-
-Tag 不是文件系统。U-Boot 中分区起始 `0x100000`、大小 `0x100000`：
-
+应该可以看到：
 ```text
-nand read 0x48000000 0x100000 0x100000
+mtd2: 00100000 00020000 "tag"
+mtd3: 00100000 00020000 "wifi"
+```
+两者大小均为 `0x100000`，即 `1048576` 字节。
 
-md.b 0x48000000 0x220
+读取 Tag 分区：
+
+```sh
+cat /dev/mtd2 > /tmp/tag-backup.bin
+```
+读取 Wi-Fi 分区：
+
+```sh
+cat /dev/mtd3 > /tmp/wifi-backup.bin
 ```
 
-样本结构：
+
+确认电脑的 TFTP 服务已启动，根目录允许写入。
+
+上传 Tag 备份：
+
+```sh
+tftp -p -l /tmp/tag-backup.bin -r tag-backup.bin 192.168.5.7
+```
+
+上传 Wi-Fi 备份：
+
+```sh
+tftp -p -l /tmp/wifi-backup.bin -r wifi-backup.bin 192.168.5.7
+```
+
+ `192.168.5.7`请替换为电脑当前的局域网 IP。
+
+### 2.2 修改Tag分区信息
+
+这里只需要修改型号就可以了，使用脚本[改型号为E2631](https://wwbnc.lanzoub.com/iLgJ840kyibi)
+把`tag-backup.bin`重命名为`tag.bin`，跟脚本放在同一级目录下，双击脚本即可。这样其他信息都还是自己贴纸上的
+提醒一下tag分区是有校验的，Tag 中同时存在主 MAC、第二 MAC、MAC 前缀、D-SN、S/N、型号和 Wi-Fi 信息。`F87***` 只是 MAC 前三字节，不是完整 MAC；
+
+![Tag分区信息](./tag.png)
+
+Tag结构：
 
 ```text
 0x00  33 33 33 33
@@ -356,23 +172,21 @@ md.b 0x48000000 0x220
 
 CRC32 计算范围从 `0x0c` 开始，长度由 payload size 决定。
 
-本次 Tag 中同时存在主 MAC、第二 MAC、MAC 前缀、D-SN、S/N、型号和 Wi-Fi 信息。`F8731A` 只是 MAC 前三字节，不是完整 MAC；修改时不能只做一次字符串替换。文档不公开真实设备标识。
+### 2.3 Tag、Wifi分区写入
 
-### 4.2 去 OOB 和切分区
+先将这两个分区传到路由器里去
 
-含 OOB 镜像步长：
 
-```text
-2048 + 64 = 2112 bytes
-```
+#### 2.3.1 方案一：使用cat命令
 
-去 OOB 并切 Tag/Wi-Fi：
 
-```bash
-node common-tools/strip_oob_and_slice.js e2638.bin e2638-no-oob.bin --page 2048 --oob 64 --slice tag:0x100000:0x100000:tag.bin --slice wifi:0x200000:0x100000:wifi.bin
-```
 
-偏移是去 OOB 后的逻辑偏移。脚本流式处理，不修改源镜像，并输出 SHA256。
+
+
+
+
+
+
 
 ### 4.3 直接写设备节点失败
 
