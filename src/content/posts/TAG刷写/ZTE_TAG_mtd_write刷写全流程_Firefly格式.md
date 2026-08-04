@@ -10,7 +10,6 @@ pinned: false
 slug: zte-tag-mtd-write-flashing-guide
 ---
 
-# 使用 mtd_write_tag 刷写 ZTE TAG 分区
 
 > 本文档面向已经通过 Telnet 进入 ZTE 路由器 Shell 的用户，介绍如何上传并使用已编译的 `mtd_write_tag` 工具刷写 TAG 分区，以及如何完整读回和校验。
 > **适用系统：** Linux 4.1.x / BusyBox 1.17.x
