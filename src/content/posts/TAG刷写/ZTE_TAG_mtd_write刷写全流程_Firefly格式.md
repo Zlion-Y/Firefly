@@ -25,7 +25,7 @@ slug: zte-tag-mtd-write-flashing-guide
 
 ## 1. 操作前准备
 
-- 电脑 TFTP 根目录中放入 [mtd_write_tag_armv7](./mtd_write_tag_armv7)。
+- 电脑 TFTP 根目录中放入 [mtd_write_tag_armv7](https://wwbnc.lanzoub.com/iW88t40izsne)。
 - 把准备刷入的 TAG 文件命名为 `tag.bin`。
 - 确认 `tag.bin` 的大小为 `1,048,576` 字节。
 - 电脑与路由器处于同一网络，路由器能够 ping 通电脑。
