@@ -1,5 +1,5 @@
 ---
-title: E2633通过 TTL 刷入中兴官方巡天 AX3000 版本（理论可行）
+title: E2633通过 TTL 刷入中兴官方巡天 AX3000 版本（实操可行）
 published: 2026-07-20
 updated: 2026-08-01
 description: 记录 E2633通过 TTL 进入 u-boot 后，使用 TFTP 写入官方巡天 AX3000 版本固件的流程，并附保留 tag 与 wifi 分区的可选做法。
@@ -15,9 +15,9 @@ slug: e2633-to-public-system
 
 ## 说明
 
-1. 标题写“理论可行”，是因为一开始采用编程器整片写入，后来在刷 WiFi 分区时发现也可以直接通过 u-boot 刷入。
+1. 一开始采用编程器整片写入，后来在刷 WiFi 分区时发现也可以直接通过 u-boot 刷入。
 2. 由于是整片写入，刷完后默认 WiFi 名称会变为 `ZTE-Q2QHKu`，密码为 `bhdh3954`。
-3. 无线校准数据 WiFi 分区、TAG 分区（SN 和 MAC 信息）都会被覆盖。但测试下来影响不大；如果想尽量完美保留这两个分区，可以参考文末的可选步骤。
+3. 无线校准数据 WiFi 分区、TAG 分区（SN 和 MAC 信息）都会被覆盖。但测试下来影响不大；如果想尽量完美保留这两个分区，可以先开telnet将这两个分区提取出来，后面在通过telnet刷入。
 4. 仅适用于 256 MB 内存、WSON8 封装的版本。
 
 ## 准备工作
@@ -121,36 +121,8 @@ reset
 
 ## 可选：保留原机 tag 和 wifi 分区
 
-如果想保留原机的 tag 与 wifi 分区，可以在执行第 6 步整片擦写前，先把这两个分区读到内存中。
+如果想保留原机的 tag 与 wifi 分区，可以在一开始就通过telnet提取这两个分区，然后再使用cat命令写入WiFi分区，用mtd_write_tag_armv7程序写入tag分区。程序可以看我这一篇帖子：
+[使用 mtd_write_tag 刷写 ZTE TAG 分区](https://zlion.top/posts/zte-tag-mtd-write-flashing-guide/)
 
-读取 tag 分区到 `0x42000000`：
 
-```shell
-nand read 0x42000000 0x100000 0x100000
-```
-
-读取 wifi 分区到 `0x42100000`：
-
-```shell
-nand read 0x42100000 0x200000 0x100000
-```
-
-两个分区读取完成后，再执行第 6 步擦写整片。整片写入完成后，将前面读取的 tag 和 wifi 分区写回。
-
-写回 tag 分区：
-
-```shell
-nand write 0x42000000 0x100000 0x100000
-```
-
-写回 wifi 分区：
-
-```shell
-nand write 0x42100000 0x200000 0x100000
-```
-
-最后重启：
-
-```shell
-reset
 ```
