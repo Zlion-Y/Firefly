@@ -1,5 +1,5 @@
 ---
-title: E2633刷入中兴官方AX3000 版本（U-Boot篇）
+title: E2633刷入中兴官方AX3000 版本（TTL篇）
 published: 2026-07-20
 updated: 2026-08-04
 description: 记录 E2633通过 TTL 进入 U-Boot 后，使用 Nand Write 官方巡天 AX3000 版本固件的流程。
@@ -34,8 +34,6 @@ author: zlion
 ## 操作步骤
 
 ### 1. 拆机
-
-快拆可参考[拆机视频](https://www.bilibili.com/video/BV1ic7y6wE3E/)。
 
 ### 2. 连接 TTL 和网线
 
