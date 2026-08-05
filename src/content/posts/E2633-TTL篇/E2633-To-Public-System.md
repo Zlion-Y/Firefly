@@ -7,7 +7,7 @@ image: ./cover.png
 tags: [E2633, TTL，U-Boot]
 category: 路由器
 draft: false
-slug: e2633-to-public-system
+slug: e2633-research-ttl
 author: zlion
 ---
 
@@ -159,3 +159,53 @@ Jump
 ```
 
 最后停在`Starting kernel ...`代表系统已经成功启动。
+
+
+## 试错部分
+
+### 1.U-Boot 命令差异
+
+缺失或不可用：
+
+```text
+mtdparts
+crc32
+tftpput
+fatwrite
+usb
+mmc
+loadb
+loads
+```
+
+可用关键命令：
+
+```text
+nand read / write / read.raw / erase / bad
+tftp
+xmodem
+mtddebug
+cspboot
+cspstart
+```
+
+标准 U-Boot 教程不能直接套用，只能传文件到路由器端，无法备份。
+
+### 2.U-Boot 中断问题
+
+从 `/dev/mtd1` 和 `/dev/mtd0` 仍能 grep 到：
+
+```text
+bootdelay=3
+bootcmd=setenv
+BootImageNum=0x00000001
+```
+
+但实际启动日志没有稳定倒计时。此前 TTL 曾正常显示倒计时，硬件问题已低优先级排除。前置提示为：
+
+```text
+Hit 1 to upgrade software version
+Hit any key to stop autoboot: 0
+```
+
+更像 `cspboot` 阶段输入窗口极短根本没给你预留按`1`中断系统启动进入U-Boot的机会。也就是说TTL刷了完整官方版后可能**无法再次进入U-Boot中了。**

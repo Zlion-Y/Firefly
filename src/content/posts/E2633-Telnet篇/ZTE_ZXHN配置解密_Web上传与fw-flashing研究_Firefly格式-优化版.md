@@ -1,13 +1,14 @@
 ---
-title: E2633转正官方版优化分析（Telnet篇）
+title: E2633转正官方版分析（Telnet篇）
 published: 2026-08-04
 updated: 2026-08-04
 description: E2633刷入官方公版后的config.bin解密、本机信息优化、本地Web上传固件和官方系统升级研究部分。
 tags: [E2631,  Telnet, fw-flashing]
 category: 路由器
-draft: true
+draft: false
 pinned: false
 slug: e2631-research-telnet
+image: ./cover.ping
 author: zlion
 ---
 
@@ -97,16 +98,10 @@ graph TD
 
 
 
-
-
-
-
-
-
 ## 2. 本机信息优化
 
 > [!NOTE] 本节提醒
-> 适用于想用U-BOOT刷写全片且保留自身设备信息和无线数据分区
+> 适用于保留自己设备的 Tag、Wi-Fi 等身份和无线数据分区
 > 适用于刷了三方固件无法绑定APP（未验证APP端是否只检测设备型号，仅猜测）
 
 
@@ -117,7 +112,7 @@ graph TD
 ```sh
 cat /proc/mtd
 ```
-应该可以看到：
+可以看到：
 ```text
 mtd2: 00100000 00020000 "tag"
 mtd3: 00100000 00020000 "wifi"
@@ -155,7 +150,7 @@ tftp -p -l /tmp/wifi-backup.bin -r wifi-backup.bin 192.168.5.7
 ### 2.2 修改Tag分区信息
 
 这里只需要修改型号就可以了，使用脚本[改型号为E2631](https://wwbnc.lanzoub.com/iLgJ840kyibi)
-把`tag-backup.bin`重命名为`tag.bin`，跟脚本放在同一级目录下，双击脚本即可。这样其他信息都还是自己贴纸上的
+把`tag-backup.bin`重命名为`tag.bin`，跟脚本放在同一级目录下，双击脚本即可得到`tag-E2631.bin`。这样其他信息都还是自己贴纸上的
 提醒一下tag分区是有校验的，Tag 中同时存在主 MAC、第二 MAC、MAC 前缀、D-SN、S/N、型号和 Wi-Fi 信息。`F87***` 只是 MAC 前三字节，不是完整 MAC；
 
 ![Tag分区信息](./tag.png)
@@ -172,105 +167,107 @@ Tag结构：
 
 CRC32 计算范围从 `0x0c` 开始，长度由 payload size 决定。
 
-### 2.3 Tag、Wifi分区写入
+### 2.3 使用 TFTP 将 Tag 和 Wi-Fi 分区传输到路由器中去
 
-先将这两个分区传到路由器里去
+本节先把待写入的 `tag-E2631.bin`、`wifi.bin` 以及方案二使用的 `mtd_write_tag_armv7` 传入路由器。以下示例中 `192.168.5.7` 是电脑的 TFTP 地址，请按实际网络修改。
+
+电脑端 TFTP 根目录至少放置：
+
+```text
+tag-E2631.bin
+wifi.bin
+mtd_write_tag_armv7
+```
+
+路由器 Telnet 端执行：
+
+```sh
+ping -c 3 192.168.5.7
+
+rm -f /tmp/tag.bin /tmp/wifi.bin /tmp/mtd_write_tag
+tftp -g -l /tmp/tag.bin -r tag-E2631.bin 192.168.5.7
+tftp -g -l /tmp/wifi.bin -r wifi.bin 192.168.5.7
+tftp -g -l /tmp/mtd_write_tag -r mtd_write_tag_armv7 192.168.5.7
+
+```
 
 
-#### 2.3.1 方案一：使用cat命令
+### 2.3.1 写入分区：方案一，使用 cat 命令
 
-
-
-
-
-
-
-
-
-
-### 4.3 直接写设备节点失败
+方案一只适用于已经确认驱动允许通过字符设备写入的设备。先写入 Tag，再写入 Wi-Fi：
 
 ```sh
 cat /tmp/tag.bin > /dev/mtd2
-
-cat /tmp/tag.bin > /dev/mtdblock2
-
 sync
 
-cat /dev/mtd2 > /tmp/tag_readback.bin
-
-md5sum /tmp/tag.bin /tmp/tag_readback.bin
+cat /tmp/wifi.bin > /dev/mtd3
+sync
 ```
 
-设备返回：
-
-```text
-/bin/sh: can't create /dev/mtdblock2: Success
-```
-
-且 MD5 不一致。重新 `mknod` 到 `/tmp`、修改节点权限也无效，因为根因不是路径权限，而是 MTD 擦除/写入接口。
-
-### 4.4 编译 ARMv7 MTD 工具
-
-默认 `gcc` 得到 AArch64，目标路由器是 armv7l，不能使用。安装交叉工具链：
+写入后立即在路由器端读回并校验：
 
 ```sh
-apt update
+rm -f /tmp/tag-readback.bin /tmp/wifi-readback.bin
+cat /dev/mtd2 > /tmp/tag-readback.bin
+cat /dev/mtd3 > /tmp/wifi-readback.bin
 
-apt install -y gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi libc6-dev-armel-cross linux-libc-dev-armel-cross
+md5sum /tmp/tag.bin /tmp/tag-readback.bin
+md5sum /tmp/wifi.bin /tmp/wifi-readback.bin
 ```
 
-清除宿主头文件变量后编译：
+两个输入文件与读回文件的 MD5 必须分别一致。Tag 分区如果出现以下任一情况，应停止操作并改用方案二：
+
+- 出现 `can not create /dev/mtdblock2: Success` 或类似写入错误；
+- 命令返回但读回 MD5 不一致；
+
+`cat` 对 NAND 的写入可能绕过必要的擦除、坏块和 ECC 处理；因此命令“没有明显报错”不等于写入成功。
+
+### 2.3.2 写入分区：方案二，使用 MTD 写入工具
+
+方案二使用已经我自己编译好的 ARMv7 程序 `mtd_write_tag_armv7`。先确认程序架构和用法：
 
 ```sh
-unset CPATH
-
-unset C_INCLUDE_PATH
-
-unset CPLUS_INCLUDE_PATH
-
-unset LIBRARY_PATH
-
-arm-linux-gnueabi-gcc -Os -static -s -o mtd_write_tag_armv7 mtd_write_tag.c
-
-file mtd_write_tag_armv7
-```
-
-正确架构：
-
-```text
-ELF 32-bit LSB executable, ARM, EABI5, statically linked
-```
-
-第一次报 `bits/wordsize.h: No such file or directory`，正是缺少 `libc6-dev-armel-cross`/`linux-libc-dev-armel-cross`。
-
-### 4.5 写入和三重校验
-
-```sh
-tftp -g -l /tmp/mtd_write_tag -r mtd_write_tag_armv7 192.168.5.7
-
-tftp -g -l /tmp/tag.bin -r tag.bin 192.168.5.7
-
 chmod +x /tmp/mtd_write_tag
+/tmp/mtd_write_tag
+```
+
+应能看到类似用法：
+
+```text
+Usage: /tmp/mtd_write_tag --yes /dev/mtdN file.bin
+Example: /tmp/mtd_write_tag --yes /dev/mtd2 /tmp/tag.bin
+```
+
+确认输入文件为目标 Tag 分区大小后执行写入：
+
+```sh
+ls -l /tmp/tag.bin
+cat /sys/class/mtd/mtd2/name 2>/dev/null
+cat /sys/class/mtd/mtd2/size 2>/dev/null
 
 /tmp/mtd_write_tag --yes /dev/mtd2 /tmp/tag.bin
-
-cat /dev/mtd2 > /tmp/tag_readback.bin
-
-md5sum /tmp/tag.bin /tmp/tag_readback.bin
-
-tftp -p -l /tmp/tag_readback.bin -r tag_readback.bin 192.168.5.7
+sync
 ```
 
-成功条件：工具内部逐字节 `OK`、路由器 MD5 一致、电脑端原文件与读回文件 MD5 一致。
+程序会按 MTD 的擦除块、写入页和坏块规则执行。出现 `MEMUNLOCK warning: Operation not supported` 或 `fsync: Invalid argument` 时，不要只根据警告判断成功或失败，必须继续做读回校验。
 
-`MEMUNLOCK warning: Operation not supported` 可在后续擦除/写入/校验全部成功时视为非致命。`fsync: Invalid argument` 也是驱动不支持同步调用的可能表现，但绝不能跳过读回校验。
+这里只在路由器端比较写入前后的 MD5：
+
+```sh
+md5sum /tmp/tag.bin
+
+rm -f /tmp/tag-readback.bin
+cat /dev/mtd2 > /tmp/tag-readback.bin
+md5sum /tmp/tag-readback.bin
+```
+
+两次 MD5 一致，且程序没有报告擦除、写入或读回错误，才可认为 Tag 写入成功。若不一致，保留终端输出，不要重启设备，也不要继续写 Bootloader 或整片 NAND。该工具只针对 Tag 的 MTD 写入流程，不能未经验证地用于 Wi-Fi、Bootloader 或其他分区。
 
 ---
 
-## 5. 第三部分：Web 上传研究
+## 3. Web 本地上传分析研究(失败)
 
-### 5.1 接口和表单
+### 3.1 接口和表单
 
 抓到的 Web 流程：
 
@@ -294,7 +291,7 @@ Content-Disposition: form-data; name="VersionUpload"; filename="firmware.bin"
 Content-Type: application/octet-stream
 ```
 
-### 5.2 SessionTimeout 的定位
+### 3.2 SessionTimeout 的定位
 
 页面返回过 `logintoken`，响应头也返回过 `X_XSRF_TOKEN`。曾出现：
 
@@ -319,7 +316,7 @@ prepare same:<page token> => SUCC
 
 这只说明准备阶段通过，不说明上传和刷写一定成功。
 
-### 5.3 升级管理器调试
+### 3.3 升级管理器调试
 
 Telnet 下可以打开升级管理器日志并查看状态：
 
@@ -344,15 +341,19 @@ MediaPid    :
 
 同时没有 `/var/tmp/fw.bin`，这更像请求未进入后端刷写，而不是固件已经写入。
 
-### 5.4 请求体上限实验
+### 3.4 请求体上限实验
 
 | 测试文件 | 现象 | 判断 |
 |---|---|---|
-| 约 300 KiB | 100% 后 HTTP 200，`SessionTimeout` | 能传完整请求，会话仍有问题 |
+| 约 300 KiB | 100% 后 HTTP 200，`SessionTimeout` | 能传完整请求，会话仍有问题，不进入后续校验升级流程 |
 | 约 320 KiB | 100% 后连接重置 | 接近/超过请求体限制 |
 | 约 330 KiB | 约 97% 后重置 | multipart 边界也占空间 |
 | 约 512 KiB | 约 62% 后重置 | 设备端提前关闭连接 |
 | 22,413,844 bytes 官方包 | 无法稳定上传 | 不适合该页面 |
+
+![300Kib测试](./300.png)
+![320Kib测试](./320.png)
+
 
 `/bin/httpd` 中发现：
 
@@ -369,7 +370,7 @@ my_upload_file
 
 这证明有 body length、临时空间和写文件分支；字符串本身不能证明唯一的上限数值。
 
-### 5.5 `/tmp` 空间与 Web 限制
+### 3.5 `/tmp` 空间与 Web 限制
 
 当时读取到：
 
@@ -380,7 +381,7 @@ my_upload_file
 
 官方包约 21.38 MiB，在 `/var/tmp` 理论上放得下，但仍被 HTTP 处理路径重置。磁盘空间够，不等于请求体限制够，也不等于升级进程会接受该文件。
 
-### 5.6 Wireshark 过滤器
+### 3.6 Wireshark 过滤器
 
 只看 HTTP 上传：
 
@@ -402,7 +403,7 @@ tcp.flags.reset == 1 || tcp.analysis.retransmission
 
 早期过滤 `udp` 只能看到 DNS、多播或调试包，不能证明 HTTP 升级。抓包中由 `192.168.5.1:80` 返回 `RST, ACK`，与设备端连接关闭相符。
 
-### 5.7 Web 结论
+### 3.7 Web 结论
 
 - 进度 100% 只表示浏览器发完请求，不表示设备已经校验或写入。
 - `SessionTimeout` 和 `ERR_CONNECTION_RESET` 必须分层排查。
@@ -411,9 +412,9 @@ tcp.flags.reset == 1 || tcp.analysis.retransmission
 
 ---
 
-## 6. 第四部分：fw-flashing 与双槽启动
+## 4. fw-flashing 与双槽启动
 
-### 6.1 参数和最小失败测试
+### 4.1 参数和最小失败测试
 
 ```sh
 /bin/fw_flashing
@@ -448,33 +449,9 @@ GetVersionInfo error==========fw_flashing error==========
 
 说明 `-f` 确实接受路径，并要求带固件 Magic/版本头。
 
-### 6.2 小升级包和 128 MiB 全片的区别
+### 4.2 官方包成功刷写
 
-本次官方升级包：
-
-```text
-文件大小     22,413,844 = 0x1560214
-文件头       0x214 bytes
-实际固件体   0x1560000 bytes
-```
-
-全片镜像：
-
-```text
-Whole flash  0x08000000
-```
-
-| 文件 | 用途 |
-|---|---|
-| 128 MiB 全片镜像 | 备份、离线分区分析、专用救援流程 |
-| 约 22 MiB `fw.bin` | `fw_flashing -f` 带头升级包 |
-| 约 25/26 MiB 第三方包 | 仍是带头包，但版本、签名和校验必须单独确认 |
-
-不要把 `e2638_no_oob_full_128MiB.bin` 直接传给 `fw_flashing -f`。
-
-### 6.3 官方包成功刷写
-
-电脑确认：
+电脑端确认：
 
 ```bat
 dir fw.bin
@@ -525,7 +502,7 @@ WriteVersion head success!
 
 说明程序选择备用高槽、擦除并写入了包体，同时更新了版本头。
 
-### 6.4 确认当前槽
+### 4.3 确认当前槽
 
 ```sh
 cat /proc/cmdline
@@ -557,7 +534,7 @@ backverphyaddr:    0x02300000
 
 另一次从高槽启动时，`/proc/cmdline` 尾部出现 `0x2300000`。两者一致时，才是较强的槽位证据；不能只看 `root=/dev/mtdblock8`。
 
-### 6.5 已确认的检查方向
+### 4.4 已确认的检查方向
 
 从 `/bin/fw_flashing` 字符串、符号和运行输出来看，存在：
 
@@ -588,136 +565,15 @@ CspSwitchVersion
 
 未找到明确 RSA 公钥验证调用。RSA 可能在 `cspd`、Web、BootROM 或其他库中，不能仅凭 `fw_flashing` 字符串判断。
 
-### 6.6 低版本回官方最新包
+## 5. 试错部分
 
-先采集：
-
-```sh
-cat /proc/capability/boardtype
-
-cat /proc/zte/verinfo/softVersion
-
-cat /proc/zte/verinfo/versionstates
-```
-
-离线分析：
-
-```bash
-node common-tools/zte_firmware_analyzer.js official-fw.bin --signature-offset 0x37fdcc --signature-size 564
-```
-
-确认型号、硬件版本、VID、包头格式和槽容量后，仍应保留当前可启动槽、Tag、配置和 Bootloader 备份。`fw_flashing` 没有可靠的只检查不写入模式，正式执行随时可能擦写备用槽。
-
----
-
-## 7. 第三方固件对比
-
-### 7.1 官方包
-
-```text
-大小：22,413,844 bytes
-MD5：de682a3dce2b128cf7edeb8ac5f958a1
-SHA256：ad05c7afade1bc2e0c900cf05e19a1b05b6df92d8d33bbb598436ab1cba77326
-型号：ZXHN E2631 V1.0.0
-版本：V1.0.0.7B5.8000
-```
-
-### 7.2 `E2633toE3630`/`AX5400Pro` 包
-
-不同文件名的两个包字节完全一致：
-
-```text
-大小：25,428,500 bytes
-MD5：1f3109ec3e282c93ae6964d88c6f5485
-SHA256：d0218b01739fa6fc110735f9020f38f1c0b9d3e1b6d026088568e798f091f7a8
-包头型号：ZXHN E2631 V1.0.0
-版本：V1.0.0.3B1.8000
-日期：20230327020150
-```
-
-固定签名区 `0x37fdcc`、长度 564 字节全零。文件名中的 E2633/E3630/AX5400Pro 不能替代包头实际型号。
-
-### 7.3 `V1.0.0.6B3.8000` 包
-
-```text
-大小：26,870,292 bytes
-MD5：525045e36cc27dd9ef42c21f99e54921
-SHA256：0617c17a70972cdc8e9b0c7beffa32e3b8bd86faad5f888d94e0ec62d492ce6c
-包头型号：ZXHN E2631 V1.0.0
-版本：V1.0.0.6B3.8000
-日期：20240611215845
-```
-
-该包签名区非全零，且长度仍落在单槽容量内；但从 `7B5` 降到 `6B3` 是降级场景，不能只看型号匹配。
-
-### 7.4 第三方升级程序
-
-| 文件 | 官方 MD5 | 第三方 MD5 | 判断 |
-|---|---|---|---|
-| `fw_flashing` | `b543771bf99ba80cdd12e1f327563039` | `d3c4d2c36e5b24a5348dee7711b625b2` | 二进制不同 |
-| `boot_flashing` | `5b651691df4d333fc94cf07cb8afbe84` | `5152556ea2d0a0b788ebfe3cfdb5bc6d` | 二进制不同 |
-| `cspd` | `c9fb945c7789335f2307e876d0e6aa72` | `d1dd580d45819fb92e6978d495112a2f` | 升级策略可能不同 |
-
-第三方 `fw_flashing` 仍保留 Magic、板型、VID、uImage、CRC、范围、写后回读和版本切换相关字符串。因此准确描述是“升级栈被修改，部分策略或签名处理发生变化”，不是“所有校验都被删除”。
-
----
-
-## 8. 完整试错记录
-
-### 8.1 U-Boot 命令差异
-
-缺失或不可用：
-
-```text
-mtdparts
-crc32
-tftpput
-fatwrite
-usb
-mmc
-loadb
-loads
-```
-
-可用关键命令：
-
-```text
-nand read / write / read.raw / erase / bad
-tftp
-xmodem
-mtddebug
-cspboot
-cspstart
-```
-
-标准 U-Boot 教程不能直接套用。
-
-### 8.2 U-Boot 中断问题
-
-从 `/dev/mtd1` 和 `/dev/mtd0` 仍能 grep 到：
-
-```text
-bootdelay=3
-bootcmd=setenv
-BootImageNum=0x00000001
-```
-
-但实际启动日志没有稳定倒计时。此前 TTL 曾正常显示倒计时，硬件问题已低优先级排除。前置提示为：
-
-```text
-Hit 1 to upgrade software version
-Hit any key to stop autoboot: 0
-```
-
-更像 `cspboot` 阶段输入窗口极短或串口时机问题，而不是 Linux `bootargs`。继续修改 Linux 参数不能解决尚未启动 Linux 的问题。
-
-### 8.3 Tag 直接写失败
+### 5.1 Tag 直接写失败
 
 尝试 `cat`、`mknod`、`chmod` 后仍 MD5 不一致。设备没有 `mtd_debug`、`flash_erase`、`nandwrite`，只有 `boot_flashing`、`fw_flashing`、`upgradetest` 等程序；这些程序没有暴露 Tag 写入接口。
 
-最终使用 MTD ioctl 工具成功。
+最终只能自己编译使用 MTD ioctl 工具（`mtd_write_tag`）成功。
 
-### 8.4 Web 反复失败
+### 5.2 Web 反复失败
 
 ```text
 升级准备失败：SessionTimeout
@@ -727,7 +583,7 @@ net::ERR_CONNECTION_RESET
 
 进度 31%、62%、97%、100% 后都见过失败。用小文件先拆分问题，确认大文件主要被 HTTP 路径限制后，停止继续提交 22 MiB 包，转为本地 `fw_flashing`。
 
-### 8.5 `boot_flashing` 误用风险
+### 5.3 `boot_flashing` 误用风险
 
 ```sh
 /bin/boot_flashing
@@ -737,15 +593,15 @@ net::ERR_CONNECTION_RESET
 
 它要求特定带头的 Boot 文件，并直接涉及 `/dev/mtd1`。从 `/dev/mtd1` 读出的裸 1 MiB 备份不能直接作为其输入。
 
-### 8.6 未验证自动回退
+### 5.4 未验证自动回退
 
 已确认 `currentverphyaddr`、`backverphyaddr`、两个 `IsBad` 字段，但没有故意刷坏包测试回退。不要为了得到一个“确定答案”而破坏当前可启动槽。
 
 ---
 
-## 9. 通用脚本与操作说明
+## 6. 通用脚本（自行研究使用）
 
-### 9.1 目录
+### 6.1 目录
 
 ```text
 common-tools/
@@ -753,11 +609,12 @@ common-tools/
   zte_type4_config_tool.js
   enable_telnet_admin.bat
   zte_firmware_analyzer.js
-  strip_oob_and_slice.js
   fw_slot_status.sh
+  mtd_write_tag_armv7
 ```
+[点此下载](https://wwbnc.lanzoub.com/i5JFl40o809g)
 
-### 9.2 Type-4 工具
+### 6.2 Type-4 配置工具
 
 ```bash
 node common-tools/zte_type4_config_tool.js inspect config.bin
@@ -775,7 +632,7 @@ node common-tools/zte_type4_config_tool.js enable-telnet config.bin config-telne
 node common-tools/zte_type4_config_tool.js decrypt config.bin config.xml --key-seed MODELKeyXXXXXXXX --iv-seed MODELIvXXXXXXXX
 ```
 
-### 9.3 固件分析工具
+### 6.3 固件分析工具
 
 ```bash
 node common-tools/zte_firmware_analyzer.js firmware.bin
@@ -785,29 +642,8 @@ node common-tools/zte_firmware_analyzer.js firmware.bin --signature-offset 0x37f
 
 输出哈希、可打印头部、型号标记、uImage CRC 和指定签名区零字节数。签名区非零不等于签名有效。
 
-### 9.4 OOB 和切片工具
 
-```bash
-node common-tools/strip_oob_and_slice.js raw.bin no-oob.bin --page 2048 --oob 64 --slice tag:0x100000:0x100000:tag.bin
-
-node common-tools/strip_oob_and_slice.js raw.bin no-oob.bin --page 2048 --oob 64 --slice tag:0x100000:0x100000:tag.bin --slice wifi:0x200000:0x100000:wifi.bin
-```
-
-offset 是去 OOB 后的逻辑偏移，原始镜像不会被修改。
-
-### 9.5 双槽只读采集
-
-```sh
-tftp -g -l /tmp/fw_slot_status.sh -r fw_slot_status.sh 192.168.5.7
-
-/bin/sh /tmp/fw_slot_status.sh > /tmp/fw-slot-status.txt
-
-tftp -p -l /tmp/fw-slot-status.txt -r fw-slot-status.txt 192.168.5.7
-```
-
-重点查看 `versionstates` 的当前地址、备用地址和 `IsBad`，不要把 `othersoftVersion` 当作自动回退证明。
-
-### 9.6 写 Tag 最小清单
+### 6.4 写 Tag 最小清单
 
 ```sh
 cat /sys/class/mtd/mtd2/name 2>/dev/null
@@ -827,112 +663,6 @@ cat /dev/mtd2 > /tmp/tag_readback.bin
 md5sum /tmp/tag.bin /tmp/tag_readback.bin
 ```
 
-只有工具 `OK` 且输入/读回 MD5 一致才继续。任何不一致都应停止并保存日志，不要马上重启。
+只有工具报告成功且输入/读回 MD5 一致才继续。任何不一致都应停止并保存日志，不要马上重启；Tag 写入优先使用 2.3.2 的 MTD 工具方案。
 
 ---
-
-## 10. 故障排查
-
-### 10.1 TFTP 超时或 `(512)`
-
-```sh
-ping -c 3 192.168.5.7
-
-ls -l /tmp/file.bin
-
-tftp -g -l /tmp/file.bin -r file.bin 192.168.5.7
-```
-
-电脑侧检查当前 IP、TFTP 根目录、Windows 防火墙、UDP 69/数据端口和服务端覆盖权限。`(512)` 通常是服务端拒绝写入、目录权限或文件策略，不是固件格式错误。
-
-### 10.2 架构错误
-
-```sh
-file mtd_write_tag_armv7
-```
-
-路由器为 armv7l 时必须是 `ELF 32-bit ARM EABI5`，不能是 AArch64。
-
-### 10.3 config 解密失败
-
-确认原文件来自目标机、前 8 字节 Type-4、种子来自目标机、ASCII 种子经过 SHA256 派生、AES 关闭自动 padding、CRC 和 zlib 均通过。失败后不要继续生成配置。
-
-### 10.4 Web 失败
-
-小文件返回 `SessionTimeout`，先重新登录并使用同一 Session 的 Cookie/XSRF token；小文件成功而大文件 RST，则排查请求体限制。进度 100% 不代表刷写。
-
-### 10.5 RST 与升级状态
-
-```sh
-ls -l /var/tmp/fw.bin /tmp/fw.bin 2>/dev/null
-
-sendcmd cspd.cspd.upgrade_mgr show
-
-ps | grep -E "fw_flashing|httpd|cspd"
-```
-
-如果没有临时文件、升级状态为 0、由路由器发 RST，优先判定为上传链路/请求体/进程状态，而不是已经开始刷写。
-
-### 10.6 槽位不明确
-
-```sh
-cat /proc/cmdline
-
-cat /proc/zte/verinfo/versionstates
-
-cat /proc/zte/verinfo/softVersion
-
-cat /proc/zte/verinfo/othersoftVersion
-```
-
-当前地址和命令行中的物理地址一致时，证据最强。两个槽通常共用 Linux 分区编号。
-
----
-
-## 11. 风险边界与推荐流程
-
-### 11.1 推荐顺序
-
-```text
-1. 记录 /proc/mtd、boardtype、cmdline、versionstates。
-2. 备份当前 config、Tag、Wi-Fi、Bootloader，并保存哈希。
-3. 所有输入先离线分析，失败就停。
-4. config 修改后做 XML 回读；Tag 修改后做 CRC 和结构检查。
-5. 只有确认架构和分区后才使用 ARMv7 MTD 工具。
-6. 固件升级使用带头小包，不把全片镜像当升级包。
-7. 写入后采集当前槽、备用槽和版本状态。
-8. 不覆盖唯一可启动备份槽，不主动测试坏包回退。
-```
-
-### 11.2 禁止直接做
-
-```text
-不要把参考机 config、Tag、rootfs 或 bootloader 写到目标机。
-
-不要把 128 MiB 全片 dump 传给 fw_flashing -f。
-
-不要用 cat > /dev/mtd2 的“Success”判断写入成功。
-
-不要把裸 /dev/mtd1 备份直接交给 boot_flashing。
-
-不要在没有救援手段时覆盖当前唯一正常槽。
-
-不要故意写入损坏固件来测试自动回退。
-```
-
-### 11.3 仍未确认的事项
-
-- 当前版本完整的 Bootloader 中断窗口和输入时序。
-- `versionopenorclose=close` 的全部状态转换。
-- 启动失败后的自动回退是否真的启用。
-- RSA 签名在具体升级链中的准确调用位置。
-- 第三方 `cspd` 修改了哪个完整性分支。
-- 不同硬件批次的配置种子是否完全相同。
-
-这些问题应优先通过只读二进制、日志、符号、包头和配置研究，不能用高风险刷写猜测。
-
----
-
-> **文档版本：** 2026-08-04
-> **适用系统：** Windows + Node.js；路由器 BusyBox/Linux 4.1.x；Armbian ARM 交叉编译环境
-> **适用平台：** 已确认 ZXHN E1630/E2631 同平台样本；其他机型必须重新验证
