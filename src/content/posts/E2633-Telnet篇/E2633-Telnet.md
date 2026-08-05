@@ -169,7 +169,7 @@ CRC32 计算范围从 `0x0c` 开始，长度由 payload size 决定。
 
 ### 2.3 使用 TFTP 将 Tag 和 Wi-Fi 分区传输到路由器中去
 
-本节先把待写入的 `tag-E2631.bin`、`wifi.bin` 以及方案二使用的 [`mtd_write_tag_armv7`] （https://wwbnc.lanzoub.com/iW88t40izsne）传入路由器。以下示例中 `192.168.5.7` 是电脑的 TFTP 地址，请按实际网络修改。
+本节先把待写入的 `tag-E2631.bin`、`wifi.bin` 以及方案二使用的 [`mtd_write_tag_armv7`](https://wwbnc.lanzoub.com/iW88t40izsne)传入路由器。以下示例中 `192.168.5.7` 是电脑的 TFTP 地址，请按实际网络修改。
 
 电脑端 TFTP 根目录至少放置：
 
