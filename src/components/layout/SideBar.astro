@@ -32,11 +32,6 @@ const SIDEBAR_SIDE = {
 	BOTTOM: "bottom",
 } as const;
 
-// 组件映射表
-const componentMap = {
-  umamiStats: UmamiStats,
-} satisfies Record<WidgetComponentType, typeof Profile>;
-
 // 组件位置常量
 const COMPONENT_POSITION = {
 	TOP: "top",
@@ -58,6 +53,7 @@ const componentMap = {
 	calendar: Calendar,
 	music: Music,
 	siteInfo: SiteInfo,
+	umamiStats: UmamiStats,
 	dynamic: Dynamic,
 };
 
