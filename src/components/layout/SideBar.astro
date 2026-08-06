@@ -12,6 +12,7 @@ import SiteInfo from "@/components/widget/SiteInfo.astro";
 import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
 import { sidebarLayoutConfig } from "@/config";
+import UmamiStats from "@/components/widget/UmamiStats.astro"; 
 import type {
 	MobileBottomComponentConfig,
 	WidgetComponentConfig,
@@ -30,6 +31,11 @@ const SIDEBAR_SIDE = {
 	RIGHT: "right",
 	BOTTOM: "bottom",
 } as const;
+
+// 组件映射表
+const componentMap = {
+  umamiStats: UmamiStats,
+} satisfies Record<WidgetComponentType, typeof Profile>;
 
 // 组件位置常量
 const COMPONENT_POSITION = {
