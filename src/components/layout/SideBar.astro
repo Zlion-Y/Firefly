@@ -7,18 +7,12 @@ import Categories from "@/components/widget/Categories.astro";
 import Dynamic from "@/components/widget/Dynamic.astro";
 import Music from "@/components/widget/Music.astro";
 import Profile from "@/components/widget/Profile.astro";
-import QuoteOfTheDay from "@/components/widget/QuoteOfTheDay.astro"; // 引入今日一言组件
-import RelationshipTimer from "@/components/widget/RelationshipTimer.astro"; // 引入恋爱计时组件
-import Schedule from "@/components/widget/Schedule.astro";
 import SidebarTOC from "@/components/widget/SidebarTOC.astro";
 import SiteInfo from "@/components/widget/SiteInfo.astro";
 import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
-import TimeGreeting from "@/components/widgets/TimeGreeting.astro"; // 引入时间问候语组件
-import UmamiStats from "@/components/widget/UmamiStats.astro"; // UmamiStats 组件
-import Weather from "@/components/widget/Weather.astro"; // 引入天气组件
-
 import { sidebarLayoutConfig } from "@/config";
+import UmamiStats from "@/components/widget/UmamiStats.astro";  // 引入 Umami 组件
 import type {
 	MobileBottomComponentConfig,
 	WidgetComponentConfig,
@@ -37,6 +31,11 @@ const SIDEBAR_SIDE = {
 	RIGHT: "right",
 	BOTTOM: "bottom",
 } as const;
+
+// 组件映射表
+const componentMap = {
+  umamiStats: UmamiStats,
+} satisfies Record<WidgetComponentType, typeof Profile>;
 
 // 组件位置常量
 const COMPONENT_POSITION = {
@@ -59,12 +58,6 @@ const componentMap = {
 	calendar: Calendar,
 	music: Music,
 	siteInfo: SiteInfo,
-	schedule: Schedule,
-	relationship: RelationshipTimer,
-	quoteOfTheDay: QuoteOfTheDay,
-	timeGreeting: TimeGreeting,
-	umamiStats: UmamiStats,
-	weather: Weather,
 	dynamic: Dynamic,
 };
 
@@ -116,7 +109,7 @@ const getAnimationDelay = (index: number): string => {
 };
 
 // 判断当前页面是否为文章页面（服务端渲染时确定）
-const isPostPage = Astro.url.pathname.includes("/blog/");
+const isPostPage = Astro.url.pathname.includes("/posts/");
 
 // 判断组件在当前页面首屏是否可见（用于计算布局间距，避免隐藏组件占位）
 const isComponentInitiallyVisible = (
@@ -204,7 +197,6 @@ const hasInitiallyVisibleTopComponents = topComponents.some(
 						const props = getComponentProps(comp, index) as any;
 						return <Component {...props} />;
 					})}
-					<UmamiStats class="onload-animation" style="animation-delay: 50ms" />
 				</div>
 			) : (
 				<>
