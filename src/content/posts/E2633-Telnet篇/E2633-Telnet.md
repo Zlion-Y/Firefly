@@ -60,8 +60,8 @@ graph TD
 
 ### 1.2 修改Config.bin开启Telnet
 
-这里提供一个一键开启Telnet脚本[config_telnet_tool.zip](https://wwbnc.lanzoub.com/iQRhI40ks1ze)
-其中也包含解、加密脚本，可以自行研究，解包得到可修改的XML文件，在打包回去使用。
+这里提供一个一键开启Telnet脚本[config-telnet-enable.zip](https://wwbnc.lanzoub.com/iC10a40v5r6j)
+
 `PortControl` 中 TELNET 行：
 ```xml
 <DM name="ServName" val="TELNET"/>
@@ -83,7 +83,7 @@ graph TD
 
 > [!CAUTION] 注意
 > 本工具由 zlion 原创，首发于 zlion.top
-> 禁止二次修改、倒卖、打包收费或用于任何商业盈利行为，转载须保留完整出处及作者署名。
+> 禁止倒卖、打包收费或用于任何商业盈利行为，转载须保留完整出处及作者署名。
 
 > [!WARNING] 使用说明
 > 1. 将 config-telnet-enable.bat、zte_config_telnet_enable.js 和 config.bin 放在同一个目录。
