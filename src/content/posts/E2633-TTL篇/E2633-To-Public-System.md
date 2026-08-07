@@ -20,7 +20,7 @@ author: zlion
 
 1. 由于是全分区整片写入，刷完后默认 WiFi 名称会变为 `ZTE-Q2QHKu`，密码为 `bhdh3954`。
 2. 所有内容仅适用于 256 MB 内存、WSON8 封装版本。
-3. 本教程会覆盖你的所有分区，无法找回，**若想保留，请先参考Telnet篇备份两个关键分区：tag、wifi。**
+3. 本教程会覆盖你的所有分区，无法找回，**若想保留，请先参考[Telnet篇](https://zlion.top/posts/e2631-research-telnet/#2-%E6%9C%AC%E6%9C%BA%E4%BF%A1%E6%81%AF%E4%BC%98%E5%8C%96)备份两个关键分区：tag、wifi。**
 4. 若在TFTP传输中失败，可能是传输速度太慢，超出了MobaXterm未注册版本的开启时长限制，此问题自行解决。
 
 ## 准备工作
