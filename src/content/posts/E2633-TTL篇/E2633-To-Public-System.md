@@ -208,4 +208,4 @@ Hit 1 to upgrade software version
 Hit any key to stop autoboot: 0
 ```
 
-更像 `cspboot` 阶段输入窗口极短根本没给你预留按`1`中断系统启动进入U-Boot的机会。也就是说TTL刷了完整官方版后可能**无法再次进入U-Boot中了。**
+更像 `cspboot` 阶段输入窗口极短根本没给你预留按`1`中断系统启动进入U-Boot的机会。也就是说TTL刷了完整官方版后可能**无法再次进入U-Boot中了。**（换了一个CH340G，结果是我的模块坏了，换了一个后可以中断系统启动了，能够进入U-BOOT了）
