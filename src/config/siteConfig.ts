@@ -108,9 +108,9 @@ export const siteConfig: SiteConfig = {
 		// 留言板页面开关，需要配置评论系统
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
-		bangumi: true,
+		bangumi: false,
 		// VNDB页面开关。
-		vndb: true,
+		vndb: false,
 		// 相册页面开关
 		gallery: true,
 		// 追番页面开关
