@@ -1,7 +1,7 @@
 ---
 title: E2633刷入中兴官方AX3000 版本（TTL篇）
 published: 2026-07-20
-updated: 2026-08-10
+updated: 2026-08-12
 description: 记录 E2633通过 TTL 进入 U-Boot 后，使用 Nand Write 官方巡天 AX3000 版本固件的流程。
 image: ./cover.png
 tags: [E2633, TTL，U-Boot]
@@ -24,8 +24,12 @@ author: zlion
 
 ## 准备工作
 
+- 核对路由器版本，见下图：
+
+![WSON8封装](./wson8.png)
+
 - USB 转 TTL 模块 CH340G 一个，最好带杜邦线，方便连接。
-- 由编程器固件去掉 OOB 后生成的 [128 MB 镜像](https://wwbnc.lanzoub.com/idNc33xkhc4f)。编程器固件来自 [hzw521](https://www.right.com.cn/forum/thread-8472425-1-1.html)。
+- 由编程器固件去掉 OOB 、并裁切10MB空间预留给坏块写入跳过的 [118 MB 镜像](https://wwbnc.lanzoub.com/iBlN541u3rxe)。编程器固件来自 [hzw521](https://www.right.com.cn/forum/thread-8472425-1-1.html)。
 - MobaXterm 等串口连接工具。
 - TFTP 服务工具（MobaXterm自带）。
 - 网线一根。
@@ -87,16 +91,16 @@ host 192.168.10.1 is alive
 在串口终端中通过 TFTP 将固件传到 RAM：
 
 ```shell
-tftp 0x43000000 e2631_no_oob_full_128MiB.bin
+tftp 0x43000000 e2631_no_oob_trim_tail_ff_10MiB.bin
 ```
 
 传输完成后，确认下载大小必须为：
 
 ```text
-Bytes transferred = 134217728 (8000000 hex)
+Bytes transferred = 123731968 (7600000 hex)
 ```
 
-![传输文件参考](./Transfer.png)
+![文件参考为128MB的](./Transfer.png)
 
 确认无误后，擦除整片 NAND：
 
@@ -112,17 +116,17 @@ Erasing at 0x7fe0000 -- 100% complete.
 OK
 ```
 
-然后一次性写入整片：
+然后一次性写入：
 
 ```shell
-nand write 0x43000000 0x0 0x8000000
+nand write 0x43000000 0x0 0x7600000
 ```
 
 应当看到以下输出
 
 ```text
-NAND write: device 0 whole chip
- 134217728 bytes written: OK
+NAND write: device 0 offset 0x0, size 0x7600000
+ 123731968 bytes written: OK
 ```
 
 ### 7. 重启
@@ -158,53 +162,3 @@ Jump
 ```
 
 最后停在`Starting kernel ...`代表系统已经成功启动。
-
-
-## 试错部分
-
-### 1.U-Boot 命令差异
-
-缺失或不可用：
-
-```text
-mtdparts
-crc32
-tftpput
-fatwrite
-usb
-mmc
-loadb
-loads
-```
-
-可用关键命令：
-
-```text
-nand read / write / read.raw / erase / bad
-tftp
-xmodem
-mtddebug
-cspboot
-cspstart
-```
-
-标准 U-Boot 教程不能直接套用，只能传文件到路由器端，无法备份。
-
-### 2.U-Boot 中断问题
-
-从 `/dev/mtd1` 和 `/dev/mtd0` 仍能 grep 到：
-
-```text
-bootdelay=3
-bootcmd=setenv
-BootImageNum=0x00000001
-```
-
-但实际启动日志没有稳定倒计时。此前 TTL 曾正常显示倒计时，硬件问题已低优先级排除。前置提示为：
-
-```text
-Hit 1 to upgrade software version
-Hit any key to stop autoboot: 0
-```
-
-更像 `cspboot` 阶段输入窗口极短根本没给你预留按`1`中断系统启动进入U-Boot的机会。也就是说TTL刷了完整官方版后可能**无法再次进入U-Boot中了。**（换了一个CH340G，结果是我的模块坏了，换了一个后可以中断系统启动了，能够进入U-BOOT了）
