@@ -100,8 +100,6 @@ tftp 0x43000000 e2631_no_oob_trim_tail_ff_10MiB.bin
 Bytes transferred = 123731968 (7600000 hex)
 ```
 
-![文件参考为128MB的](./Transfer.png)
-
 确认无误后，擦除整片 NAND：
 
 ```shell
