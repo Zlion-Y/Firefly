@@ -149,6 +149,7 @@ export default defineConfig({
 				"fa7-brands": ["*"],
 				"fa7-regular": ["*"],
 				"fa7-solid": ["*"],
+				"line-md": ["emoji-smile"],
 				"simple-icons": ["*"],
 				mdi: ["*"],
 				mingcute: ["*"],
