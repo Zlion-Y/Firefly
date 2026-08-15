@@ -147,7 +147,7 @@ const logoVariants = await Promise.all(
                     siteConfig.navbar.followTheme ? "text-(--primary)" : "dark:text-white text-black"
                 ]} style="font-family: var(--font-navbar-title, inherit)">
                                     {logoConfig?.type === "icon" ? (
-                                        <Icon is:inline name={logoConfig.value || "material-symbols:home-pin-outline"} class="navbar-logo text-[1.75rem] mb-1 mr-2" />
+                                        <Icon is:inline name={logoConfig.value || "material-symbols:home-pin-outline"} class="navbar-logo text-[1.75rem] mr-2" />
                                     ) : logoIsImage && logoVariants.length > 0 ? (
                                         logoVariants.map((variant) => variant.image ? (
                                             <Picture
@@ -165,7 +165,7 @@ const logoVariants = await Promise.all(
                                             <img src={variant.src} alt={logoAlt} class={variant.class} data-logo-theme={variant.theme} fetchpriority="high" />
                                         ))
                                     ) : (
-                                        <Icon is:inline name="material-symbols:home-pin-outline" class="navbar-logo text-[1.75rem] mb-1 mr-2" />
+                                        <Icon is:inline name="material-symbols:home-pin-outline" class="navbar-logo text-[1.75rem] mr-2" />
                                     )}
                     {navbarTitle}
                 </div>
