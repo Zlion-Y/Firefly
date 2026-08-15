@@ -44,6 +44,7 @@
 #navbar>div {
     background-color: var(--card-bg);
     border: 1px solid transparent;
+    border-top: 0;
     border-radius: 0 0 0.75rem 0.75rem;
     --navbar-surface-blur: 0px;
     /* 给下面的 ::before 当定位包含块与层叠上下文 */
