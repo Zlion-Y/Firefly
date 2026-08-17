@@ -9,7 +9,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	showInSidebar: true,
 
 	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
-	mode: "local",
+	mode: "meting",
 
 	// 默认音量 (0-1)
 	volume: 1,
@@ -24,7 +24,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	meting: {
 		// Meting API 地址
 		// 默认使用官方 API，也可以使用自定义 API
-		api: "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id",
+		api: "https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
 		// 音乐平台：netease=网易云音乐, tencent=QQ音乐, kugou=酷狗音乐, xiami=虾米音乐, baidu=百度音乐
 		server: "netease",
 		// 类型：song=单曲, playlist=歌单, album=专辑, search=搜索, artist=艺术家
@@ -37,7 +37,6 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 		fallbackApis: [
 			"https://api.injahow.cn/meting/?server=:server&type=:type&id=:id",
 			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
-			"https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
 		],
 	},
 
