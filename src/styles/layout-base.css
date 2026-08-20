@@ -137,3 +137,9 @@
     opacity 0.35s ease-in-out,
     transform 0.35s ease-in-out;
 }
+
+/* 静态侧栏不参与 Swup 容器替换，导航开始时先隐藏旧页面内容，
+   等正文与目录同步准备好后再恢复可见，避免出现旧侧栏残留。 */
+[data-sidebar-static="true"][data-sidebar-transition-pending="true"] {
+  visibility: hidden;
+}
