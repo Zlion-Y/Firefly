@@ -123,6 +123,23 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
   }
 
   // 防止 Swup 切页重跑脚本时重复注册监听器（initSidebarTOC 由下方一次性监听器在切页时触发）
+  // 目录所在的静态侧栏不会被 Swup 重建，因此导航后需要手动重播与正文相同的入场动画。
+  function restartSidebarTOCAnimation() {
+    const tocContent = document.getElementById("sidebar-toc-content");
+    const tocWidget = tocContent?.closest<HTMLElement>("widget-layout");
+    if (!tocWidget) return;
+
+    tocWidget.classList.remove("onload-animation");
+    tocWidget.style.setProperty("animation-delay", "0ms", "important");
+    void tocWidget.offsetWidth;
+    tocWidget.classList.add("onload-animation");
+  }
+
+  function refreshSidebarTOC() {
+    initSidebarTOC();
+    restartSidebarTOCAnimation();
+  }
+
   if (!window.__sidebarTOCInit) {
     window.__sidebarTOCInit = true;
 
@@ -136,9 +153,7 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
 
     // 正文容器完成替换后，目录必须在同一个任务中重建，
     // 否则侧栏旧组件已经隐藏，而新目录还要等待一段时间才出现。
-    document.addEventListener("firefly:sidebar-toc-refresh", () => {
-      initSidebarTOC();
-    });
+    document.addEventListener("firefly:sidebar-toc-refresh", refreshSidebarTOC);
 
     // Astro 页面切换事件
     document.addEventListener("astro:page-load", () => {
