@@ -4,7 +4,6 @@ export interface Props {
 	speed?: number;
 	deleteSpeed?: number;
 	pauseTime?: number;
-	apiUrl?: string;
 	class?: string;
 }
 
@@ -13,7 +12,6 @@ const {
 	speed = 100,
 	deleteSpeed = 50,
 	pauseTime = 2000,
-	apiUrl = "",
 	class: className = "",
 } = Astro.props;
 const textData = Array.isArray(text) ? JSON.stringify(text) : text;
@@ -24,8 +22,7 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text;
   data-text={textData}
   data-speed={speed}
   data-delete-speed={deleteSpeed}
-  data-pause-time={pauseTime}
-  data-api-url={apiUrl}></span>
+  data-pause-time={pauseTime}></span>
 
 <script>
   class TypewriterEffect {
@@ -144,37 +141,8 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text;
 
   }
 
-  async function loadApiText(element: HTMLElement) {
-    const apiUrl = element.dataset.apiUrl;
-    if (!apiUrl) return;
-
-    if (window.fireflyCachedApiSubtitle) {
-      element.dataset.text = JSON.stringify([window.fireflyCachedApiSubtitle]);
-      return;
-    }
-
-    try {
-      const response = await fetch(apiUrl, {
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      const text = typeof data === "string" ? data : data?.hitokoto;
-      if (!text) throw new Error("API response does not contain hitokoto");
-      window.fireflyCachedApiSubtitle = text;
-      element.dataset.text = JSON.stringify([text]);
-    } catch (error) {
-      console.warn("Failed to load typewriter subtitle API, using fallback text.", error);
-    }
-  }
-
-  async function initTypewriterElements() {
+  function initTypewriterElements() {
     const typewriterElements = document.querySelectorAll(".typewriter");
-    await Promise.all(
-      Array.from(typewriterElements).map((element) =>
-        loadApiText(element as HTMLElement)
-      )
-    );
     typewriterElements.forEach((element) => {
       const el = element as HTMLElement & { __typewriterInstance?: TypewriterEffect };
       if (el.__typewriterInstance) {
@@ -186,10 +154,10 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text;
   }
 
   // 初始化所有打字机效果
-  async function runInitWithDelay() {
-    await initTypewriterElements();
+  function runInitWithDelay() {
+    initTypewriterElements();
     // 兼容 banner 显隐晚于内容替换的场景
-    setTimeout(() => void initTypewriterElements(), 220);
+    setTimeout(initTypewriterElements, 220);
   }
 
   // 防止 Swup 切页重跑脚本时重复注册监听器/hooks（runInitWithDelay 由下方一次性监听器在切页时触发）

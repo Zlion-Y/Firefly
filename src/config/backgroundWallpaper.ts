@@ -77,8 +77,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			subtitle: [
 				"正在获取一言……",
 			],
-			// 主页横幅副标题 API（请求失败时使用上面的 subtitle 作为备用文本）
-			subtitleApi: "https://v1.hitokoto.cn/?c=f",
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
 			typewriter: {
@@ -147,7 +145,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			transparentMode: "semi",
 			// 毛玻璃模糊度，0 即关闭导航栏的毛玻璃
 			// 注意：导航栏子菜单与浮动面板始终保留毛玻璃，模糊度跟随此项但有最小值
-			blur: 10,
+			blur: 5,
 		},
 		// 水波纹动画效果配置，开启会影响页面性能，增加内存占用，请根据自己的喜好开启
 		waves: {
