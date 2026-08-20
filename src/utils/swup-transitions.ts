@@ -151,6 +151,8 @@ function registerSwupHooks(): void {
 			}
 			setStaticSidebarTransitionPending(!isSamePage);
 			if (!isSamePage) {
+				// 目标页面类型已知时，先隐藏不属于目标页的旧侧栏组件。
+				updateSidebarComponentsVisibility(targetPathname);
 				// 添加页面切换保护，防止导航栏闪烁
 				document.documentElement.classList.add("is-page-transitioning");
 			}
@@ -248,6 +250,7 @@ function registerSwupHooks(): void {
 		setStaticSidebarTransitionPending(
 			!pathsEqual(targetPathname, window.location.pathname),
 		);
+		updateSidebarComponentsVisibility(targetPathname);
 
 		// 禁用 #main-grid 的过渡动画，防止 lg:is-home 切换时 transform 产生 700ms 动画
 		const mainGrid = document.getElementById("main-grid");

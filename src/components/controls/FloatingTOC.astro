@@ -347,15 +347,11 @@ const hideSidebarOnPostPage =
   if (typeof window !== "undefined" && !window.floatingTOCListenersInitialized) {
     window.floatingTOCListenersInitialized = true;
 
-    // Swup 路由切换
-    document.addEventListener("swup:contentReplaced", () => {
-      setTimeout(initFloatingTOC, 100);
-    });
+    // 正文替换后与侧栏目录同步刷新，避免悬浮目录短暂保留上一页内容。
+    document.addEventListener("firefly:sidebar-toc-refresh", initFloatingTOC);
     
     // Astro 页面切换事件
-    document.addEventListener("astro:page-load", () => {
-      setTimeout(initFloatingTOC, 100);
-    });
+    document.addEventListener("astro:page-load", initFloatingTOC);
     
     // 浏览器导航事件
     window.addEventListener("popstate", () => {

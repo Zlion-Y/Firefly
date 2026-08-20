@@ -10,10 +10,19 @@ const sidebarStickyState: Record<
 	right: { topClass: "top-0", hasVisibleTop: false },
 };
 
-// 检查当前页面是否为文章详情页
-const isCurrentPagePost = (): boolean =>
-	window.location.pathname.includes("/posts/") ||
-	window.location.pathname.includes("/post/");
+// 检查路径是否为文章页。导航开始时传入目标 URL，避免继续使用旧页面路径。
+const isPostPath = (path: string): boolean => {
+	let pathname = path;
+	try {
+		pathname = new URL(path, window.location.href).pathname;
+	} catch {
+		// 保留原始路径，供相对路径或异常 URL 继续判断。
+	}
+
+	return pathname.includes("/posts/") || pathname.includes("/post/");
+};
+
+const isCurrentPagePost = (): boolean => isPostPath(window.location.pathname);
 
 // Grid 列类常量
 const GRID_COL_CLASSES = [
@@ -133,8 +142,10 @@ export function updateMainGridCols(): void {
 }
 
 // 更新侧边栏组件的可见性
-export function updateSidebarComponentsVisibility(): void {
-	const isPostPage = isCurrentPagePost();
+export function updateSidebarComponentsVisibility(
+	path = window.location.pathname,
+): void {
+	const isPostPage = isPostPath(path);
 
 	// 处理侧边栏级别的 hideSidebarOnPostPage 配置
 	document

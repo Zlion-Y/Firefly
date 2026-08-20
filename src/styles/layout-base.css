@@ -143,3 +143,10 @@
 [data-sidebar-static="true"][data-sidebar-transition-pending="true"] {
   visibility: hidden;
 }
+
+/* 静态容器使用 display: contents，实际可见盒子是其子节点，需同步隐藏子节点。 */
+[data-sidebar-static="true"][data-sidebar-transition-pending="true"] > * {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
