@@ -107,22 +107,6 @@ function syncWallpaperLayout(
 }
 
 /**
- * 静态侧栏不在 Swup 容器列表内，导航时需要先隐藏旧页面的组件，
- * 待新正文和目录完成同步后再恢复显示。
- */
-function setStaticSidebarTransitionPending(pending: boolean): void {
-	document
-		.querySelectorAll<HTMLElement>('[data-sidebar-static="true"]')
-		.forEach((sidebar) => {
-			if (pending) {
-				sidebar.setAttribute("data-sidebar-transition-pending", "true");
-			} else {
-				sidebar.removeAttribute("data-sidebar-transition-pending");
-			}
-		});
-}
-
-/**
  * Swup 页面切换编排（从 Layout.astro 迁出）。
  * 注册 link:click / content:replace / visit:start / page:view / visit:end 钩子。
  */
@@ -149,10 +133,7 @@ function registerSwupHooks(): void {
 			if (isSamePage) {
 				document.documentElement.classList.remove("is-page-transitioning");
 			}
-			setStaticSidebarTransitionPending(!isSamePage);
 			if (!isSamePage) {
-				// 目标页面类型已知时，先隐藏不属于目标页的旧侧栏组件。
-				updateSidebarComponentsVisibility(targetPathname);
 				// 添加页面切换保护，防止导航栏闪烁
 				document.documentElement.classList.add("is-page-transitioning");
 			}
@@ -181,10 +162,8 @@ function registerSwupHooks(): void {
 			syncWallpaperLayout(currentMode, isHome, isMobileForBanner);
 		}
 
-		// 先用新正文重建目录，再同步切换侧栏组件，避免旧侧栏残留或目录晚一拍出现。
-		document.dispatchEvent(new CustomEvent("firefly:sidebar-toc-refresh"));
+		// 更新侧边栏组件的可见性（根据新页面的 URL）
 		updateSidebarComponentsVisibility();
-		setStaticSidebarTransitionPending(false);
 
 		// 只处理katex元素的容器，使用浏览器原生滚动条
 		scheduleContentOverflowEnhancements();
@@ -203,9 +182,9 @@ function registerSwupHooks(): void {
 			const tocElement = document.querySelector("table-of-contents");
 			const tocInit = tocElement?.init;
 			if (tocElement && typeof tocInit === "function") {
-				requestAnimationFrame(() => {
+				setTimeout(() => {
 					tocInit();
-				});
+				}, 100);
 			}
 		}
 
@@ -240,17 +219,6 @@ function registerSwupHooks(): void {
 		// change banner height immediately when a link is clicked
 		const bodyElement = document.querySelector("body") as HTMLElement;
 		const isHomePage = pathsEqual(visit.to.url, url("/"));
-		const targetPathname = (() => {
-			try {
-				return new URL(visit.to.url, window.location.href).pathname;
-			} catch {
-				return visit.to.url;
-			}
-		})();
-		setStaticSidebarTransitionPending(
-			!pathsEqual(targetPathname, window.location.pathname),
-		);
-		updateSidebarComponentsVisibility(targetPathname);
 
 		// 禁用 #main-grid 的过渡动画，防止 lg:is-home 切换时 transform 产生 700ms 动画
 		const mainGrid = document.getElementById("main-grid");
@@ -491,9 +459,6 @@ function registerSwupHooks(): void {
 		}, 300);
 	});
 	window.swup.hooks.on("visit:end", (_visit: { to: { url: string } }) => {
-		// 导航失败时没有 content:replace，确保旧页面可以恢复显示。
-		setStaticSidebarTransitionPending(false);
-
 		// Finish progress bar
 		const progressBar = document.getElementById("progress-bar");
 		if (progressBar) {

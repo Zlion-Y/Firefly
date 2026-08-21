@@ -479,14 +479,6 @@ html {
         @apply pointer-events-auto;
     }
 
-    .dropdown-item:focus {
-        @apply outline-hidden;
-    }
-
-    .mobile-dropdown button:focus {
-        @apply outline-hidden;
-    }
-
     .meta-icon {
         @apply w-8 h-8 transition-colors duration-150 rounded-md flex items-center justify-center bg-(--btn-regular-bg)
         text-(--btn-content) mr-2

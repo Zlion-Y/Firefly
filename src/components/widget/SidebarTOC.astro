@@ -95,7 +95,7 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
     };
   }
 
-  // 侧栏目录在静态侧栏容器内，不是 swup 容器：站内导航后其 DOM 不被替换。
+  // 侧栏目录在 #right-sidebar-static 内，不是 swup 容器：站内导航后其 DOM 不被替换。
   // attach() 内部会校验现有锚点是否属于当前正文——新鲜则直接附着（首屏 SSR），
   // 过时或缺失（导航后/加密解密后）则自动回退 DOM 遍历重建，无需在此区分场景。
   function initSidebarTOC() {
@@ -123,23 +123,6 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
   }
 
   // 防止 Swup 切页重跑脚本时重复注册监听器（initSidebarTOC 由下方一次性监听器在切页时触发）
-  // 目录所在的静态侧栏不会被 Swup 重建，因此导航后需要手动重播与正文相同的入场动画。
-  function restartSidebarTOCAnimation() {
-    const tocContent = document.getElementById("sidebar-toc-content");
-    const tocWidget = tocContent?.closest<HTMLElement>("widget-layout");
-    if (!tocWidget) return;
-
-    tocWidget.classList.remove("onload-animation");
-    tocWidget.style.setProperty("animation-delay", "0ms", "important");
-    void tocWidget.offsetWidth;
-    tocWidget.classList.add("onload-animation");
-  }
-
-  function refreshSidebarTOC() {
-    initSidebarTOC();
-    restartSidebarTOCAnimation();
-  }
-
   if (!window.__sidebarTOCInit) {
     window.__sidebarTOCInit = true;
 
@@ -151,13 +134,14 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
       initSidebarTOC();
     }
 
-    // 正文容器完成替换后，目录必须在同一个任务中重建，
-    // 否则侧栏旧组件已经隐藏，而新目录还要等待一段时间才出现。
-    document.addEventListener("firefly:sidebar-toc-refresh", refreshSidebarTOC);
+    // 页面切换时重新初始化
+    document.addEventListener("swup:contentReplaced", () => {
+      setTimeout(initSidebarTOC, 100);
+    });
 
     // Astro 页面切换事件
     document.addEventListener("astro:page-load", () => {
-      initSidebarTOC();
+      setTimeout(initSidebarTOC, 100);
     });
 
     // 浏览器导航事件
