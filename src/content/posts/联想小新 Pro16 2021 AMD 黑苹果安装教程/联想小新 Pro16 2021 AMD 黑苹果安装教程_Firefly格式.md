@@ -4,7 +4,7 @@ published: 2023-06-02
 updated: 2023-06-02
 description: 面向联想小新 Pro16 2021 AMD 版的黑苹果安装、EFI 调整和 OpenCore 启动项配置教程。
 tags: [黑苹果, 联想小新Pro16]
-category: 运维教程
+category: 运维
 draft: false
 image: ./lenovo-pro16-2021-amd-hackintosh-figure-01.jpeg
 pinned: false
