@@ -198,3 +198,13 @@ ESP/EFI/OC/OpenCore.efi
 | 更新后无法启动                | 不建议在线升级大版本；恢复原 EFI 或重新制作安装 U 盘排查        |
 
 ---
+
+## 8. 视频演示
+
+<iframe width="100%" height="468"
+  src="//player.bilibili.com/player.html?bvid=BV1zV4y1U79F&p=1&autoplay=0"
+  scrolling="no" border="0" frameborder="no"
+  framespacing="0" allowfullscreen="true">
+</iframe>
+
+---
