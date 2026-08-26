@@ -4,7 +4,7 @@ export const analyticsConfig: AnalyticsConfig = {
 	// Google Analytics ID
 	googleAnalyticsId: "",
 	// Microsoft Clarity ID
-	microsoftClarityId: "y8h6h5vmf3",
+	microsoftClarityId: "",
 	// Umami 统计配置
 	umamiAnalytics: {
 		// Umami Website ID
@@ -45,12 +45,5 @@ export const analyticsConfig: AnalyticsConfig = {
 		hashMode: false,
 		// 是否开启网站录屏功能
 		screenRecord: true,
-	},
-	// Vercel Web Analytics 配置
-	vercelAnalytics: {
-		// 是否启用（需站点部署在 Vercel 上，并在 Dashboard 开启 Web Analytics）
-		enabled: true,
-		// 发送模式：auto 自动（生产才发送），development 开发也发送，production 仅生产发送
-		mode: "auto",
 	},
 };

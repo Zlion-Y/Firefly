@@ -23,8 +23,4 @@ export type AnalyticsConfig = {
 		hashMode?: boolean; // 单页面应用统计（Vue/React 等），默认 false
 		screenRecord?: boolean; // 开启网站录屏功能，默认 true
 	};
-	vercelAnalytics?: {
-		enabled?: boolean; // 是否启用 Vercel Web Analytics，默认 false
-		mode?: "auto" | "development" | "production"; // 发送模式，默认 auto
-	};
 };
