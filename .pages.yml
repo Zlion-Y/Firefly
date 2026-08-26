@@ -1,0 +1,99 @@
+media:
+  input: public/assets/images   # CMS 上传的图片存到仓库这个目录
+  output: /assets/images        # 写入文章中的 URL 前缀
+
+content:
+  # ============ 内容 ============
+  - name: blog
+    label: 内容
+    type: group
+    items:
+      # ---- 文章 ----
+      - name: posts
+        label: 文章
+        type: collection
+        path: src/content/posts
+        subfolders: true            # Firefly 允许子目录
+        view:
+          primary: title
+          sort: published
+          order: desc
+        filename:
+          template: "{primary}.md"
+          field: create             # 新建时显示文件名输入框，方便改成英文 slug
+        fields:
+          - name: title
+            type: string
+            required: true
+          - name: published
+            type: date
+            required: true
+            options:
+              format: yyyy-MM-dd
+          - name: updated
+            type: date
+            options:
+              format: yyyy-MM-dd
+          - name: description
+            type: text
+            label: 摘要
+          - name: image
+            type: image
+            label: 封面图
+          - name: tags
+            type: string
+            list: true
+          - name: category
+            type: string
+          - name: draft
+            type: boolean
+            label: 草稿
+          - name: pinned
+            type: boolean
+            label: 置顶
+          - name: slug
+            type: string
+            pattern: "^[a-z0-9-]*$"
+          - name: password
+            type: string
+            label: 加密密码
+          - name: passwordHint
+            type: string
+            label: 密码提示
+          - name: body
+            type: rich-text
+            label: 正文
+
+      # ---- 动态 ----
+      - name: dynamic
+        label: 动态
+        type: collection
+        path: src/content/dynamic
+        filename: "{year}-{month}-{day}-{hour}{minute}{second}.md"
+        view:
+          sort: published
+          order: desc
+        fields:
+          - name: published
+            type: date
+            required: true
+            options:
+              time: true
+              format: yyyy-MM-dd HH:mm:ss
+          - name: body
+            type: rich-text
+            label: 内容
+
+      # ---- 独立页面 ----
+      - name: spec
+        label: 独立页面
+        type: collection
+        path: src/content/spec
+        exclude: ["friends.mdx"]    # 友链页是 MDX，不适合结构化编辑
+        fields:
+          - name: title
+            type: string
+          - name: description
+            type: string
+          - name: body
+            type: rich-text
