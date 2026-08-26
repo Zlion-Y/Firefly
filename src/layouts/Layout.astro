@@ -3,6 +3,7 @@ import GoogleAnalytics from "@components/analytics/GoogleAnalytics.astro";
 import La51Analytics from "@components/analytics/La51Analytics.astro";
 import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
 import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
+import VercelAnalytics from "@components/analytics/VercelAnalytics.astro";
 import CodeGroupManager from "@components/features/CodeGroupManager.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
@@ -153,6 +154,11 @@ const siteLogo = await getSiteLogo();
             autoTrack={analyticsConfig.la51Analytics?.autoTrack}
             hashMode={analyticsConfig.la51Analytics?.hashMode}
             screenRecord={analyticsConfig.la51Analytics?.screenRecord}
+            />
+    )}
+    {analyticsConfig?.vercelAnalytics?.enabled && (
+            <VercelAnalytics
+            mode={analyticsConfig.vercelAnalytics?.mode}
             />
     )}
 
