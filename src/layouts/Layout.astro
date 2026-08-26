@@ -4,6 +4,7 @@ import La51Analytics from "@components/analytics/La51Analytics.astro";
 import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
 import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import VercelAnalytics from "@components/analytics/VercelAnalytics.astro";
+import VercelSpeedInsights from "@components/analytics/VercelSpeedInsights.astro";
 import CodeGroupManager from "@components/features/CodeGroupManager.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontSetup from "@components/features/FontSetup.astro";
@@ -159,6 +160,11 @@ const siteLogo = await getSiteLogo();
     {analyticsConfig?.vercelAnalytics?.enabled && (
             <VercelAnalytics
             mode={analyticsConfig.vercelAnalytics?.mode}
+            />
+    )}
+    {analyticsConfig?.vercelSpeedInsights?.enabled && (
+            <VercelSpeedInsights
+            mode={analyticsConfig.vercelSpeedInsights?.mode}
             />
     )}
 
