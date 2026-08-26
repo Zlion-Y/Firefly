@@ -53,11 +53,4 @@ export const analyticsConfig: AnalyticsConfig = {
 		// 发送模式：auto 自动（生产才发送），development 开发也发送，production 仅生产发送
 		mode: "auto",
 	},
-	// Vercel Speed Insights 配置（Web Vitals 性能监控）
-	vercelSpeedInsights: {
-		// 是否启用（需站点部署在 Vercel 上，并在 Dashboard 开启 Speed Insights）
-		enabled: true,
-		// 发送模式：auto 自动（生产才发送），development 开发也发送，production 仅生产发送
-		mode: "auto",
-	},
 };

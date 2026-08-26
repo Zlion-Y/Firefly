@@ -27,8 +27,4 @@ export type AnalyticsConfig = {
 		enabled?: boolean; // 是否启用 Vercel Web Analytics，默认 false
 		mode?: "auto" | "development" | "production"; // 发送模式，默认 auto
 	};
-	vercelSpeedInsights?: {
-		enabled?: boolean; // 是否启用 Vercel Speed Insights（Web Vitals 性能监控），默认 false
-		mode?: "auto" | "development" | "production"; // 发送模式，默认 auto
-	};
 };
