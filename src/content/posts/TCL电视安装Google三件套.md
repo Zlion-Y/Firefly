@@ -3,14 +3,17 @@ title: TCL 固件冻结 Google 相关进程的分析记录
 published: 2026-08-22
 updated: 2026-08-22
 description: 记录 TCL Android TV 对 Google 相关进程的冻结行为、确认结果以及已尝试但未成功的处理方式。
-tags: [TCL电视, 雷鸟, Google, FreezeManager]
+tags:
+  - TCL电视
+  - 雷鸟
+  - Google
+  - FreezeManager
 category: 运维
 draft: false
 pinned: false
 slug: tcl-freeze-google
 ---
-
-> 本文档只记录 TCL 冻结 Google 相关进程的发现、确认结果和失败尝试，不提供完整的 Google 三件套安装教程。
+> 本文档只记录 TCL 电视冻结 Google 相关进程的发现、确认结果和失败尝试，不提供完整的 Google 三件套安装教程。  
 > **适用设备：** TCL `tcl_mt5879_cn`
 > **适用系统：** Android 11 / API 30，固件 V729
 > **连接方式：** ADB `192.168.5.2:5555`
@@ -131,3 +134,4 @@ com.android.vending 52.0.20
 
 > **文档版本：** 2026-08-22
 > **记录状态：** 已确认冻结机制，处理尝试均未成功
+
