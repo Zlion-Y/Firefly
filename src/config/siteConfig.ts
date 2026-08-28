@@ -46,7 +46,7 @@ export const siteConfig: SiteConfig = {
 	subtitle: "Stay Free",
 
 	// 站点 URL
-	site_url: "https://zlion.top",
+	site_url: "https://blog.zlion.top",
 
 	// 站点描述
 	description:
