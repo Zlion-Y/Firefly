@@ -136,6 +136,11 @@ graph TD
 
 把 `InstallConfig` 的总开关改写为 `false`，验证器读不到可用策略即放行。**安装器全程保持启用，开机无影响，重启后依然生效。**
 
+> [!IMPORTANT] 两条命令任选其一，不要都执行
+> 下面给出的是**同一个操作**在两种终端里的写法，效果完全相同，按你正在使用的终端**二选一**即可。两者只是引号和反斜杠的转义规则不同——把 Git Bash 版粘贴进 PowerShell（或反过来）会因转义错位导致写入失败，先后执行两条则是在做两次重复写入。
+>
+> 分不清自己在哪个终端？看提示符：`user@主机名` 开头的是 Git Bash，`PS C:\...` 开头的是 PowerShell。
+
 Git Bash：
 
 ```bash
@@ -177,6 +182,9 @@ adb install xxx.apk
 ## 5. 恢复原始拦截
 
 想恢复 TCL 原始策略时，把总开关改回 `true` 即可：
+
+> [!NOTE] 说明
+> 这里只列 Git Bash 写法；PowerShell 用户请把第 4 节 PowerShell 命令中的 `false` 改成 `true` 执行，同样二选一。
 
 ```bash
 adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{\"enable\"\\:\"true\"}' --where \"project_id='InstallConfig'\""
