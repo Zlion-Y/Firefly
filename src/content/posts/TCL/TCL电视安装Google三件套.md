@@ -8,7 +8,7 @@ tags:
   - 雷鸟
   - Google
   - FreezeManager
-category: 运维
+category: Android TV
 draft: false
 pinned: false
 slug: tcl-freeze-google

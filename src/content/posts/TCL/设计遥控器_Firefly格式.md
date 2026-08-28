@@ -4,7 +4,7 @@ published: 2026-08-24
 updated: 2026-08-24
 description: 从设计目标、iOS 16 设计语言到触控板与浮动光标的交互方案，完整复盘一款手机遥控 Android TV App 的设计过程。
 tags: [Android TV, UI 设计, 交互设计, Android 开发]
-category: 应用设计
+category: Android TV
 draft: false
 pinned: false
 slug: design-a-tv-remote-app

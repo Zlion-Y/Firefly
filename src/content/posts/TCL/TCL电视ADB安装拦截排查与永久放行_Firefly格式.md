@@ -5,7 +5,7 @@ updated: 2026-08-28
 description: 定位 TCL/雷鸟电视系统安装器拦截 ADB 安装的验证组件，通过改写 InstallConfig 配置实现免禁用、免脚本的永久放行
 image: ./cover.png
 tags: [ADB, TCL电视, Android, 逆向分析, 运维教程]
-category: 运维教程
+category: Android TV
 draft: false
 pinned: false
 slug: tcl-tv-adb-install-unlock
