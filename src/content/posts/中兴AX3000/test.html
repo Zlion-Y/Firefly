@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>子路由代理测速总结</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f7; color: #1d1d1f; padding: 32px 16px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .sub { color: #86868b; font-size: 13px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #1d1d1f; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 600; color: #86868b; padding: 8px 10px; border-bottom: 1px solid #e8e8ed; background: #fafafa; white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .hl { font-weight: 700; color: #d70015; }
+  .ok { color: #34c759; font-weight: 600; }
+  .warn { color: #ff9500; font-weight: 600; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tag-red { background: #ffe5e7; color: #d70015; }
+  .tag-green { background: #e3f8e8; color: #1a8a3d; }
+  .tag-orange { background: #fff2de; color: #b26a00; }
+  .note { font-size: 12px; color: #86868b; margin-top: 10px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>子路由代理下载测速总结</h1>
+  <div class="sub">192.168.5.22 中兴 E2631（双核）· Mihomo v1.19.30 · 2026-08-30</div>
+
+  <div class="card">
+    <h2>📊 测速结果对比</h2>
+    <table>
+      <tr><th>指标</th><th>旧节点</th><th>新 SS 节点</th><th>说明</th></tr>
+      <tr><td>单线程</td><td class="hl">28.6 Mbps</td><td class="hl">19.8 Mbps</td><td>单连接 TCP 限制，与 CPU 无关</td></tr>
+      <tr><td>8 路并发</td><td class="hl">54.6 Mbps</td><td class="hl">35.0 Mbps</td><td>CPU 满载时极限吞吐</td></tr>
+      <tr><td>并发增益</td><td>1.9x</td><td>1.8x</td><td>多线程可吃满单核</td></tr>
+      <tr><td>相对旧节点</td><td>基准</td><td class="warn">-36%</td><td>新节点整体更慢</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>🖥️ CPU / 内存状态（子路由 top）</h2>
+    <table>
+      <tr><th>状态</th><th>CPU</th><th>代理进程 m5upx</th><th>Load</th></tr>
+      <tr><td>压测满载</td><td>usr 37.5% + sirq 12.5% · idle 50%</td><td class="hl">45.7%</td><td>2.07</td></tr>
+      <tr><td>彻底空载</td><td>idle 100%</td><td>0%</td><td>0.60</td></tr>
+      <tr><td>每核采样（压测中）</td><td colspan="3"><span class="tag tag-red">cpu0 100%（满载）</span> <span class="tag tag-green">cpu1 0%（闲置）</span> ← 单核瓶颈实锤</td></tr>
+      <tr><td>内存</td><td colspan="3" class="ok">202MB used / 605MB cached（可回收）· 全程无压力</td></tr>
+    </table>
+    <div class="note">⚠️ 判定 CPU 瓶颈看 top 的 idle%/sirq%，不要看 loadavg（含 D 状态任务 jffs2 水分，空载时 load 仍可高达 2.17）。</div>
+  </div>
+
+  <div class="card">
+    <h2>🎯 核心结论</h2>
+    <table>
+      <tr><th style="width:120px">结论</th><th>依据</th><th style="width:140px">建议</th></tr>
+      <tr><td class="hl">单核瓶颈</td><td>代理进程单线程 + 网卡软中断全部绑定核 0，核 1 完全闲置</td><td>换设备优先<b>单核性能</b>，核数意义不大</td></tr>
+      <tr><td>旧节点极限</td><td>8 路并发 CPU 满载实测 54.6 Mbps</td><td>日常多线程下载（IDM/aria2）吃满</td></tr>
+      <tr><td class="warn">新 SS 节点更慢</td><td>35 vs 54.6 Mbps（约 -36%），可能节点限速或 SS 加密更耗 CPU</td><td>检查节点带宽 / 换回旧节点</td></tr>
+      <tr><td>内存健康</td><td>~830MB 总量，缓存可回收，零压力</td><td>无需处理</td></tr>
+      <tr><td class="warn">HTTPS 异常</td><td>走代理 HTTPS 全部 TLS 握手失败（curl exit 35）</td><td>排查节点 TLS 质量</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>🚀 终极建议</h2>
+    <table>
+      <tr><th style="width:120px">方案</th><th>效果</th></tr>
+      <tr><td><b>软路由</b>（N100 级）</td><td>单核为路由器 SoC 的 5-10 倍，代理轻松 500+ Mbps</td></tr>
+      <tr><td><b>多线程下载工具</b></td><td>当前设备即可吃满 ~55 Mbps（单线程仅 ~28）</td></tr>
+      <tr><td><b>固件调优</b></td><td class="warn">无解 —— 中兴固件未开放 RPS 中断分散</td></tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>
