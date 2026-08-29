@@ -8,7 +8,7 @@ category: 路由器
 draft: false
 pinned: false
 slug: e2631-research-telnet
-image: ./cover.png
+image: ./cover-tel.png
 author: zlion
 ---
 
