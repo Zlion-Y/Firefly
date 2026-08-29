@@ -350,7 +350,7 @@ telnet 192.168.1.50
 
 ## 六、性能实测
 
-[一张图总结](./test.html)
+[一张图总结](/interactive/test.html)
 
 ### 6.1 分加密方式对比
 
