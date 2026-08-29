@@ -262,7 +262,11 @@ md5sum /tmp/tag-readback.bin
 
 ---
 
-## 3. Web 本地上传分析研究(失败)
+## 3. Web 本地上传分析研究
+
+> [!CAUTION] 注意（2026/08/29更新）
+> 中兴官方系统自带Web本地上传升级界面：http://192.168.5.1/supgrade.html
+> 由[@cnjn](https://www.right.com.cn/forum/space-uid-639610.html)研究发现，以下内容仅作研究分享。
 
 ### 3.1 接口和表单
 
