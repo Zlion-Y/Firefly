@@ -1,8 +1,8 @@
 ---
 title: 中兴 E2631 巡天AX3000 固件解密与 mihomo 透明代理全攻略
 published: 2026-08-29
-updated: 2026-08-29
-description: 中兴 ZXHN E2631 固件逆向全记录：分区加密密钥推导、无 OpenWrt 依赖的 mihomo 透明代理移植、三分区拆片持久化与 telnet 部署全流程
+updated: 2026-08-30
+description: 中兴 ZXHN E2631 固件逆向全记录：分区加密密钥推导、mihomo 移植、内存爆满事故复盘与 UPX+GOMEMLIMIT 优化、开机自动拉取程序的网络加载方案
 image: ./zproxy-cover.png
 tags: [路由器, 固件逆向, mihomo, ZTE, 透明代理]
 category: 运维教程
@@ -26,14 +26,16 @@ slug: zte-e2631-zproxy-mihomo
 |------|------|
 | SoC | 中兴 ZX279128S（双核 Cortex-A9 rev1，part 0xc09） |
 | CPU 特性 | 无 idiv 硬件除法、无 VFP/NEON（软浮点必须） |
-| 内存 | 256MB（DTB 模板写 512MB，以实际为准） |
+| 内存 | **实际可用 225MB**（DTB 模板写 512MB；实测 MemTotal 225,324kB，系统基线已用约 140MB，开机可用仅 ~94MB） |
 | 闪存 | 128MB SPI NAND（去 OOB 后 128MiB） |
 | 内核 | Linux 4.1.25 #2 SMP（2025-09-25 版实测） |
 | WiFi | MT7916（AX3000） |
-| busybox | v1.17.2 精简版（无 dd skip/head/tail/od） |
+| busybox | v1.17.2 精简版（无 dd skip/head/tail/od/env/pidof/timeout 新语法） |
 
 > [!WARNING] 警告
-> Cortex-A9 没有 idiv 指令。所有 GOARM=7 的 Go 程序（含 mihomo 官方 armv7 版）直接 `Illegal instruction`，**必须用 GOARM=5 版本**。这是本次移植最大的隐蔽坑。
+> 两个决定成败的硬件事实：
+> ① Cortex-A9 没有 idiv 指令，所有 GOARM=7 的 Go 程序（含 mihomo 官方 armv7 版）直接 `Illegal instruction`，**必须用 GOARM=5 版本**；
+> ② **这台机器的内存预算只有 ~94MB**（225MB 减去系统基线 140MB）。任何"解压到内存盘再运行"的方案都要把本体大小计进预算，46MB 的解压体积是不可承受的。本文的内存优化（第二章）就是围绕这个数字展开的。
 
 ### 1.2 分区布局实测
 
@@ -101,102 +103,90 @@ inode:   node_crc=crc32(node[0:60]) data_crc=crc32(data@68)
 
 | 陷阱 | 表现 | 对策 |
 |------|------|------|
-| 无 dd skip | 读偏移失败 | 自带静态 musl busybox |
-| musl busybox dd 随机 SIGILL | 大文件读写中途崩溃（数据完整，退出码脏） | 分块 ≤2MB + 重试循环 + md5 校验 |
+| 无 dd skip | 读偏移失败 | 自带静态 musl busybox（v10 方案已不需要） |
+| 无 env 命令 | `setsid env VAR=x cmd` 报 can't execute 'env' | 用 `sh -c 'export VAR=x; exec cmd'` 包装 |
+| setsid 不认 VAR=val 前缀 | `setsid GOMEMLIMIT=... cmd` 把变量名当程序名 | 同上，脚本内 export 后 exec |
+| 无 pidof / timeout 老语法 | 按 pidof 杀进程是空操作；timeout 要 `-t 秒` | ps + awk 取 pid；`timeout -t N cmd` |
+| telnet 会话退出杀后台任务 | 直接 `cmd &` 随会话消失 | `(setsid script.sh &)` |
 | md5sum 大文件崩溃 | 管道校验失败 | 先落文件再 md5sum |
 | /tmp 被系统周期清空 | 工具文件神秘消失 | 工具放 /usercfg 持久分区 |
-| telnet 会话退出杀后台任务 | setsid 前缀启动长任务 | `(setsid cmd &)` |
-| heredoc 内容含 ZZEOF 分隔行 | 提前截断、后续内容被当命令执行 | 二进制文件一律 curl 传输 |
+| **mihomo SAFE_PATHS 限制** | provider 的 path 不在 `-d` 目录内直接 fatal | path 写**相对路径** `providers/sub1.yaml` |
 
 ---
 
-## 二、方案设计
+## 二、方案设计与内存危机复盘
 
 ### 2.1 为什么不用 OpenWrt
 
 ZX279128S 的以太网交换（NPP）、SPI NAND 加密层、WiFi 整合均为中兴闭源内核组件，社区无对应 OpenWrt target，移植工作量以月计且 WiFi 部分基本无解。原厂固件功能完整，保留它、在用户态外挂代理是唯一现实路径。
 
-### 2.2 架构设计
+### 2.2 内存爆满事故（旧方案复盘）
 
-核心矛盾：rootfs 分区 100% 满、/tmp 仅 20MB 放不下 46MB 的 mihomo、裸写不持久。最终方案：
+> [!CAUTION] 事故记录
+> 旧方案：mihomo armv5 xz 包（10.9MB）拆三片存插件分区，开机 `xzcat` 解压到 /DPITMP 内存盘（解压后 **46MB**），裸跑不限内存。
+> 实际后果：系统基线 140MB + 本体 46MB + 运行 RSS ~60MB ≈ **246MB，逼近 225MB 物理上限**。运行一段时间后内存耗尽，**所有节点全部超时**，代理不可用。
+
+旧方案的错误在于把"能启动"当成了"能常驻"：解压产物 46MB 常驻内存盘（tmpfs 的每一页都是真实内存），加上 Go 运行时无限制的堆增长，256MB 的小内存设备必然爆。
+
+### 2.3 内存优化三板斧
+
+| 优化 | 手段 | 节省 |
+|------|------|------|
+| 本体免解压 | **UPX 3.96 打包 armv5 二进制**（`--best` 默认 NRV2E 算法），46MB → **13.6MB**，内核按页解压执行，内存盘只占 13.6MB | **-32MB** |
+| Go 堆压顶 | 启动环境变量 **`GOMEMLIMIT=30MiB GOGC=40`**，强制 GC 把堆压在 30MiB 内（代价是 CPU 略增） | RSS 从 60MB → **~50MB 稳定不涨** |
+| 砍面板加载 | 去掉 `external-ui`，用在线面板 board.zash.run.place（本地 UI 文件不占内存盘） | -2MB |
+
+**UPX 打包的三个坑（每个都实测撞过）：**
+
+1. **必须打包 GOARM=5 的二进制**。用 armv7 版打包出来的 UPX 文件照样 SIGILL——问题在内核代码不在 stub；
+2. **必须用 UPX 3.96 + 默认 NRV2E**。UPX 5.x 打包直接 `Illegal instruction`；`--lzma` 打包 `Segmentation fault`（stub 不兼容本机软浮点 A9）；
+3. 打包命令：`upx-3.96 --best -o mihomo_upx mihomo_armv5`，产出 13,621,624 字节。
+
+### 2.4 新架构：开机网络加载（v10，不分片）
+
+本体只有 13.6MB，干脆**不存路由器里**：设备上只保留几 KB 的脚本和配置，每次开机自动从网络拉取本体到内存盘运行。换 mihomo 版本只需更新下载地址，分区零占用。
 
 ```mermaid
 graph TD
-    A[mihomo armv5 xz 10.9MB] -->|拆3片| B[/UUPlugin p1 4.5MB/]
-    A -->|拆3片| C[/status p2 4.5MB/]
-    A -->|拆3片| D[/DPIPlugin p3 1.9MB/]
-    B --> E[开机脚本 cat 拼接]
-    C --> E
-    D --> E
-    E --> F[xzcat 解压到 /DPITMP 60MB 内存盘]
-    F --> G[mihomo 运行 TUN 透明代理]
-    H[/usercfg 配置+busybox+sub.url/] --> E
+    A["开机"] --> B["boot.sh 等待 WAN 就绪"]
+    B --> C["按 dl.url 逐行尝试下载 UPX 本体 13.6MB"]
+    C --> D["大小精确校验 13621624 字节"]
+    D --> E["GOMEMLIMIT=30MiB 启动 /DPITMP"]
+    F["/usercfg/zproxy: boot.sh + config + dl.url + sub.url ≈ 6KB"] --> B
 ```
 
 | 设计点 | 说明 |
 |--------|------|
-| mihomo 版本 | v1.19.30 linux-armv5（GOARM=5 软浮点） |
-| 存储 | 三个 RW 插件分区的空闲空间（持久化 ✓） |
-| 运行位置 | /DPITMP（60MB 内存盘） |
-| 面板 | mihomo 自动下载 UI（无需自带）；在线面板 board.zash.run.place |
-| 内存占用 | mihomo RSS 约 30-60MB，/DPITMP 45MB |
-| 自启动 | UUPlugin 钩子（非桥接模式自动）/ 桥接模式手动一行命令 |
+| mihomo 版本 | v1.19.30 linux-armv5（GOARM=5 软浮点）+ UPX 3.96 |
+| 本地持久占用 | **约 6KB**（boot.sh / config_base.yaml / dl.url / sub.url，全在 /usercfg） |
+| 运行位置 | /DPITMP（60MB 内存盘，仅占 13.6MB） |
+| 内存预算 | 基线 140 + 本体 13.6 + RSS 50 ≈ **204MB / 225MB，可用余量 ~43MB 稳定** |
+| 下载源 | dl.url 每行一个候选地址依次回退（GitHub Release / 镜像加速 / 自有服务器） |
+| 面板 | 在线面板 board.zash.run.place（不占本机资源） |
+| 工具依赖 | 无（原厂 busybox 的 cat/curl/sed 就够） |
+| 自启动 | 手动一行命令（见第五章）；升级包注入钩子路线见 5.2 |
 
-> [!TIP] 建议
-> mihomo 配置了 `external-ui` 后，首次启动会**自动从 GitHub 下载面板**（走自己的代理出网），无需自带面板程序。就算下载失败，在线面板不受影响。
+> [!NOTE] 提示
+> 离线备选方案（无外网环境）：把 13.6MB 本体按各分区空闲精确裁成 4 片存插件分区（UUPlugin 4.5MB / status 4.5MB / DPIPlugin 2.6MB / usercfg 1.4MB），boot.sh 用 cat 拼接——其余逻辑完全相同，只是把 fetch 换成 cat。
 
 ---
 
 ## 三、部署步骤（MobaXterm 全图形操作）
 
 > [!NOTE] 提示
-> 文件传输使用 MobaXterm 内置的 HTTP / TFTP 服务，纯界面操作，无需在 PC 上跑任何脚本。配套文件见 `MobaXterm部署包/` 目录。
+> 配套文件见 `MobaXterm部署包/` 目录：boot.sh、config_base.yaml、dl.url、sub.url——一共 4 个小文件，本地持久占用约 6KB。
 
-### 3.1 MobaXterm 会话与内置服务
+### 3.1 准备工作
 
-1. Session → **Telnet** → 路由器 IP → 登录（admin）
-2. 工具栏 **Tools → HTTP Server** → 根目录选择 `MobaXterm部署包/上传到路由器的文件` → 端口填 **8000** → Start
-3. （可选）**Tools → TFTP Server** → 同一目录 → 端口 69 → Start（备用通道）
-4. 记下 PC 的局域网 IP（示例用 192.168.1.100）
+1. 把打包好的 `mihomo_armv5_upx`（13,621,624 字节）传到某个可被路由器 HTTP 下载的位置：GitHub Release（国内直连不稳时在 dl.url 里加一行 ghproxy 类镜像地址）或自有服务器/NAS；
+2. 把地址填进 `dl.url`（每行一个，从上到下依次尝试）；
+3. MobaXterm：Session → **Telnet** → 路由器 IP → 登录（admin）；**Tools → HTTP Server** → 目录选 `MobaXterm部署包/上传到路由器的文件` → 端口 **8000** → Start；记下 PC 局域网 IP（示例 192.168.1.100）。
 
-### 3.2 创建目录并拉取文件（路由器侧）
-
-```bash
-mkdir -p /usercfg/zproxy /UUPlugin/zproxy /status/zproxy /DPIPlugin/zproxy
-```
+### 3.2 上传脚本与配置（路由器侧）
 
 ```bash
-cd /usercfg/zproxy
+mkdir -p /usercfg/zproxy
 ```
-
-```bash
-curl -o busybox http://192.168.1.100:8000/busybox-armv7l
-```
-
-```bash
-chmod +x busybox
-```
-
-```bash
-curl -o /UUPlugin/zproxy/p1 http://192.168.1.100:8000/zp_p1
-```
-
-```bash
-curl -o /status/zproxy/p2 http://192.168.1.100:8000/zp_p2
-```
-
-```bash
-curl -o /DPIPlugin/zproxy/p3 http://192.168.1.100:8000/zp_p3
-```
-
-> [!TIP] 建议
-> 也可以用 TFTP 备用通道拉取（busybox 自带 tftp 客户端）：
-> `tftp -g -b 4096 -r zp_p1 192.168.1.100`
-> 大文件建议加 `-b 4096` 提高块大小，否则默认 512 字节分块会很慢。
-
-### 3.3 写入启动脚本与配置
-
-同样用 curl 从 MobaXterm 的 HTTP 服务拉取（这两个文件就在部署包目录里）：
 
 ```bash
 curl -o /usercfg/zproxy/boot.sh http://192.168.1.100:8000/boot.sh
@@ -207,6 +197,10 @@ curl -o /usercfg/zproxy/config_base.yaml http://192.168.1.100:8000/config_base.y
 ```
 
 ```bash
+curl -o /usercfg/zproxy/dl.url http://192.168.1.100:8000/dl.url
+```
+
+```bash
 echo "https://你的Clash订阅URL" > /usercfg/zproxy/sub.url
 ```
 
@@ -214,29 +208,26 @@ echo "https://你的Clash订阅URL" > /usercfg/zproxy/sub.url
 chmod +x /usercfg/zproxy/boot.sh
 ```
 
-### 3.4 config_base.yaml 关键内容
+### 3.3 config_base.yaml 关键内容
 
 ```yaml
 mixed-port: 7890
 external-controller: 0.0.0.0:9090
-external-ui: /tmp/zproxy/ui
 secret: ""
-tun:
-  enable: true
-  stack: system
-  dns-hijack:
-    - any:53
-  auto-route: true
-  auto-detect-interface: true
-dns:
-  enable: true
-  enhanced-mode: fake-ip
+mode: rule
+allow-lan: true
+unified-delay: true
+tcp-concurrent: true
+profile:
+  store-selected: true
 proxy-providers:
   sub1:
     type: http
     url: "__SUB_URL__"
     interval: 86400
-    path: /tmp/zproxy/providers/sub1.yaml
+    path: providers/sub1.yaml     # 必须相对路径 (SAFE_PATHS 限制)
+    health-check:
+      enable: false
 proxy-groups:
   - name: PROXY
     type: select
@@ -244,27 +235,52 @@ proxy-groups:
   - name: AUTO
     type: url-test
     use: [sub1]
+    url: https://www.gstatic.com/generate_204
+    interval: 900
+    tolerance: 50
 rules:
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - MATCH,PROXY
 ```
 
-> [!TIP] 建议
-> 规则集保持最简（无 GEOIP 依赖），避免启动时联网下载分流失败导致代理不可用。订阅链接支持 Clash 格式。
+> [!IMPORTANT] 重要
+> `path` 必须写**相对路径**。mihomo v1.19.30 的 SAFE_PATHS 机制要求 provider 落盘位置在 `-d` 主目录内，写绝对路径（如 /tmp/...）直接 `fatal: path is not subpath of home directory`。
+> 不配置 `external-ui`，用在线面板（见 4.3），本机不存 UI 文件。
 
-### 3.5 boot.sh 启动脚本核心逻辑
+### 3.4 boot.sh 启动脚本核心逻辑
 
 ```bash
-load_mihomo() {
-    cat /UUPlugin/zproxy/p1 /status/zproxy/p2 /DPIPlugin/zproxy/p3       | xzcat > /DPITMP/zproxy/mihomo
-    SZ=$(wc -c < /DPITMP/zproxy/mihomo)
-    [ "$SZ" = "46465150" ] || return 1
-    chmod +x /DPITMP/zproxy/mihomo
+fetch_mihomo() {
+    # dl.url 每行一个候选地址, 依次尝试, 大小精确匹配才算成功
+    while read -r U; do
+        case "$U" in http*) ;; *) continue ;; esac
+        curl -s --max-time 300 --connect-timeout 15 -o $ZDIR/mihomo.part "$U"
+        SZ=$(wc -c < $ZDIR/mihomo.part 2>/dev/null)
+        [ "$SZ" = "$MIHOMO_SIZE" ] && { mv $ZDIR/mihomo.part $ZDIR/mihomo; return 0; }
+        rm -f $ZDIR/mihomo.part
+    done < $DLURL
+    return 1
+}
+
+start_mihomo() {
+    # 精简 busybox 无 env 且 setsid 不认 VAR=val, 用 sh -c 包装
+    printf '#!/bin/sh\nexport GOMEMLIMIT=30MiB GOGC=40\nexec %s/mihomo -d %s -f %s/config.yaml\n' \
+        $ZDIR $ZDIR $ZDIR > $ZDIR/run.sh
+    chmod +x $ZDIR/run.sh
+    ( setsid $ZDIR/run.sh > $ZDIR/mihomo.log 2>&1 & )
+    # UPX 解压在内存紧张时可达 10-20 秒, 轮询等待进程出现
+    i=0
+    while [ $i -lt 10 ]; do
+        sleep 2
+        ps | grep '[m]ihomo' | grep -v grep | awk '{print $1}' > $PIDF
+        [ -s $PIDF ] && break
+        i=$((i+1))
+    done
 }
 ```
 
 > [!IMPORTANT] 重要
-> 原厂 busybox（v1.17.2）没有 dd 的 skip 支持和 xzcat，因此自带了一个**静态 musl busybox**（/usercfg/zproxy/busybox），所有 flash 读写与解压都通过它完成。
+> `GOMEMLIMIT=30MiB GOGC=40` 是**内存不爆的关键**，必须通过环境变量传入且不能省略。三件套坑：无 `env` 命令、`setsid` 不认 `VAR=val` 前缀、telnet 退出杀后台——所以用"脚本内 export + exec + setsid"的组合。等进程出现必须**轮询**（不能只等 2 秒，UPX 解压在内存紧张时可达 10-20 秒）。
 
 ---
 
@@ -284,9 +300,9 @@ load_mihomo() {
 /usercfg/zproxy/boot.sh status
 ```
 
-启动后自动：拼装三片 → 解压到 /DPITMP → 等待 WAN 就绪 → 生成配置 → 启动 mihomo（TUN 透明代理）。
+启动后自动：等待 WAN → 按 dl.url 拉取本体（首次约 1-3 分钟）→ 大小校验 → 等待 WAN → 生成配置 → GOMEMLIMIT 压顶启动（mixed-port 手动代理模式）。本体已校验存在时跳过下载，restart 很快。
 
-### 4.2 导入订阅
+### 4.2 导入订阅 / 更换程序版本
 
 ```bash
 echo "https://你的Clash订阅URL" > /usercfg/zproxy/sub.url
@@ -296,47 +312,38 @@ echo "https://你的Clash订阅URL" > /usercfg/zproxy/sub.url
 /usercfg/zproxy/boot.sh restart
 ```
 
-> [!NOTE] 提示
-> 订阅按 Clash 格式解析，24 小时自动更新。修改 sub.url 后 restart 即可生效。
+换 mihomo 版本：本地重新 UPX 打包 → 传到下载源 → 覆盖 dl.url 即可（改 `MIHOMO_SIZE` 同步新字节数）。
 
 ### 4.3 面板
 
 | 方式 | 地址 | 说明 |
 |------|------|------|
-| 本地面板 | http://192.168.1.50:9090/ui | mihomo 自动下载，需能出网 |
-| 在线面板 | https://board.zash.run.place | 添加控制器 192.168.1.50:9090 |
+| 在线面板 | https://board.zash.run.place | 添加控制器 http://路由器IP:9090 |
 
 面板内可切节点、看流量、测延迟。HTTPS 在线面板连 HTTP 控制器时浏览器会拦混合内容，点地址栏盾牌图标允许即可。
+
+### 4.4 内存验收（部署后建议做一次）
+
+```bash
+ps | grep mihomo
+```
+
+```bash
+grep -E "MemFree|MemAvailable" /proc/meminfo
+```
+
+合格标准：RSS 约 50MB 且**长时间不增长**；MemAvailable 稳定在 35MB 以上。若 RSS 持续上涨，检查启动环境里 `GOMEMLIMIT` 是否生效（`cat /DPITMP/zproxy/run.sh` 应有 export 行）。
 
 ---
 
 ## 五、自启动方案
 
-### 5.1 原理
+### 5.1 现状：手动一行命令
 
-中兴原厂有三个插件守护进程会从各自的 RW 插件分区执行脚本：
-
-| 守护进程 | 分区 | 执行文件 | 触发条件 |
-|----------|------|----------|----------|
-| uuplugind | /UUPlugin | /UUPlugin/uuplugin | 插件状态启用（非桥接模式） |
-| owdplugind | /owdptsplugin | .../owdpts/start.sh | 插件安装流程 |
-
-实测 2025-09 固件中，直接投放脚本**不会被自动执行**（厂商要求插件经过官方渠道安装并写入数据库状态），但在**非桥接（路由）模式**下，一旦插件状态被置位（例如在 Web 管理页启用过联通插件），uuplugind 就会在开机时自动执行。
-
-### 5.2 已部署内容
-
-| 文件 | 位置 | 作用 |
-|------|------|------|
-| /UUPlugin/uuplugin | 可执行脚本 | uuplugind 拉起时调用（非桥接模式） |
-| /UUPlugin/uu.conf | 同上 | 插件配置（版本号占位） |
-| /usercfg/zproxy/uuplugin.hook | 母本备份 | 防止分区清理丢失 |
-
-### 5.3 桥接模式（手动启动说明）
-
-当前设备作为子路由桥接/旁挂使用时，uuplugind 会因桥接模式检查直接跳过插件执行，此时需要手动启动：
+中兴原厂插件守护进程（uuplugind 等）有数据库状态门控，空降脚本不会被自动执行（桥接模式下更是直接跳过）。当前方案重启后手动启动：
 
 ```bash
-telnet 192.168.1.50
+telnet 路由器IP
 ```
 
 ```bash
@@ -344,47 +351,81 @@ telnet 192.168.1.50
 ```
 
 > [!NOTE] 提示
-> 就一行命令。所有文件都已持久化在 /usercfg 和三个插件分区里，重启不丢。路由器日常不重启的话，启动一次就一直有效。
+> 脚本和配置已持久化在 /usercfg，重启不丢；本体开机自动拉取。路由器日常不重启的话，启动一次就一直有效。
+
+### 5.2 进阶：官方升级包注入钩子（已验证格式）
+
+通过官方 Web 升级通道（supgrade.html）刷入"加了一行钩子"的官方固件包，可以彻底解决自启。逆向结论：
+
+- 官方升级包与 SR1010 同构（outer magic `99999999 44444444...` + ver_header），当前渠道下发的包**本身就是免签名的**（header_offset=0，VerifySign 跳过）；
+- 包内 rootfs 用同一把 AES-128-ECB 密钥（`E263111559d0dfde`），可解包、修改、重加密，CRC 链（hdr_crc → hdr_crc2 → kernel CRC → fs CRC）全部可离线重算；
+- 刷写窗口由包的 ver_header +0x1E0/+0x1E4 字段声明（本机为 0x700000~0x2300000），rootfs 分区固定 18.9MB，仅剩 ~51KB 节点余量——**恰好够注入几 KB 的开机钩子**（调用 /usercfg/zproxy/boot.sh），程序本体则由钩子开机自动拉取，两者完美互补。
 
 ---
 
-## 六、性能实测
+## 六、性能实测（UPX 内存优化版）
 
-[一张图总结](/interactive/test.html)
+[交互式测速总结页](/interactive/test.html)
 
-### 6.1 分加密方式对比
+### 6.1 单线程 / 并发下载实测（GitHub 大文件）
 
-| 加密方式 | 测试节点 | 延迟 | 速率 | CPU 均值/峰值 | mihomo RSS |
-|----------|----------|------|------|---------------|------------|
-| SS aes-256-gcm | 新加坡Z03 (IEPL x2) | 36ms | 2.62 MB/s ≈ 21 Mbps | 16% / 50% | 46.6 MB |
-| VMess auto | 香港Z10 (IEPL) | 40ms | 4.79 MB/s ≈ 38 Mbps（单轮，后失效） | 未覆盖满速时段 | 46.5 MB |
-| AUTO 混合 | 自动选速 | - | 最高 5.3 MB/s ≈ 43 Mbps | - | - |
+| 指标 | VMess 节点（旧） | SS 节点（新） | 说明 |
+|------|--------|-----------|------|
+| 单线程 | **28.6 Mbps** | **19.8 Mbps** | 单连接 TCP 限制，与 CPU 无关 |
+| 8 路并发 | **54.6 Mbps** | **35.0 Mbps** | CPU 满载时的极限吞吐 |
+| 并发增益 | 1.9x | 1.8x | 多线程可吃满单核 |
+| 相对 VMess | 基准 | -36% | 新 SS 节点整体更慢 |
+
+（同为 VMess 香港Z10 节点，GitHub 突发测得过 3.35 MB/s ≈ 27 Mbps，与上表同一量级）
 
 > [!NOTE] 提示
-> VMess 的 `cipher: auto` 在无硬件 AES 的 A9 上实际使用 chacha20-ietf-poly1305（纯软件），CPU 开销低于 SS 的 aes-256-gcm 软件实现，但免费 VMess 节点稳定性较差。SS 软浮点 AES-256-GCM 峰值 50% 单核符合预期。
+> 日常用多线程下载工具（IDM/aria2）即可吃满 ~55 Mbps；单线程应用受 TCP 单连接限制只有 ~28 Mbps。VMess 的 `cipher: auto` 在无硬件 AES 的 A9 上实际使用 chacha20-ietf-poly1305（纯软件），比 SS 的软浮点 AES-256-GCM 更省 CPU——这也是 SS 节点并发吞吐低 36% 的原因之一。
 
-### 6.2 资源占用
+### 6.2 CPU 单核瓶颈判定
+
+| 状态 | CPU | 代理进程 | Load |
+|------|-----|---------|------|
+| 压测满载 | usr 37.5% + sirq 12.5% · idle 50% | **45.7%** | 2.07 |
+| 彻底空载 | idle 100% | 0% | 0.60 |
+| 每核采样（压测中） | **cpu0 100%（满载）/ cpu1 0%（闲置）** ← 单核瓶颈实锤 | - | - |
+
+- 代理进程单线程 + 网卡软中断全部绑定核 0，核 1 完全闲置——**升级设备优先看单核性能，核数意义不大**；
+- 中兴固件未开放 RPS 中断分散，固件层面无解；
+- 判定 CPU 瓶颈看 top 的 `idle%/sirq%`，不要看 loadavg（含 D 状态任务的水分，空载时 load 仍可能高达 2+）；
+- HTTPS 异常：走代理 HTTPS 全部 TLS 握手失败（curl exit 35）与 CPU 无关，是该节点的 TLS 质量问题，换节点解决。
+
+### 6.3 内存对比（核心改进）
+
+| 指标 | 旧方案（xz 解压） | 新方案（UPX + GOMEMLIMIT） |
+|------|------|------|
+| 内存盘本体占用 | 46 MB | **13.6 MB** |
+| mihomo RSS | ~60 MB 失控增长 | **~50 MB，GOMEMLIMIT 压顶不涨** |
+| 系统可用内存 | 趋近 0 → **节点全部超时** | **~43 MB 稳定**（开机实测） |
+| 能否常驻运行 | ✗（运行一段时间必挂） | ✓（压力测试通过） |
+
+### 6.4 资源占用明细
 
 | 指标 | 数值 |
 |------|------|
-| mihomo 内存 RSS | 30 - 60 MB（波动） |
-| /DPITMP（60MB 内存盘） | 45 MB（mihomo 46MB 解压后） |
-| /tmp（20MB 内存盘） | 8.8 MB（UI + 配置 + 日志） |
-| 订阅节点 | 45 个（33 SS + 12 VMess），37 个有延迟数据 |
-
-### 6.3 MobaXterm 操作
-
-全部操作可在 MobaXterm 的 Telnet 会话中完成：Session → Telnet → 路由器 IP，登录后粘贴命令即可。文件传输用 PC 端 HTTP 服务 + 路由器 curl 的方式（见部署步骤），配套的完整部署包见 `MobaXterm部署包/` 目录。
+| mihomo RSS | 49 - 53 MB（GOMEMLIMIT=30MiB 下稳定） |
+| /DPITMP（60MB 内存盘） | 13.6 MB（UPX 本体） |
+| 本地持久占用 | 约 6 KB（4 个脚本/配置文件） |
+| 订阅节点 | 45 个（33 SS + 12 VMess） |
 
 ## 七、故障排查
 
 | 现象 | 排查 |
 |------|------|
-| mihomo 没起来 | `cat /tmp/zproxy/mihomo.log`；多数是订阅 URL 无效或拉取失败 |
-| 面板打不开 | 确认 9090 端口：`netstat -l | grep 9090`；在线面板跨 HTTPS 记得允许混合内容 |
+| mihomo 没起来 | `cat /DPITMP/zproxy/mihomo.log`；多数是订阅 URL 无效或拉取失败 |
+| **运行一段时间节点全部超时** | **内存耗尽。确认 run.sh 里有 `GOMEMLIMIT=30MiB`；确认跑的是 UPX 版（本体 13.6MB）而不是 xz 解压版（46MB）** |
+| 启动卡死（进程 R 状态、日志空、端口不开） | 系统长期运行后内存碎片化所致，**重启路由器再 start**；正常开机流程不受影响 |
+| `all download sources failed` | dl.url 各地址逐一 `curl -v` 检查；确认开机时外网可用 |
+| 面板打不开 | `netstat -l \| grep 9090`；在线面板跨 HTTPS 记得允许混合内容 |
 | 订阅拉取失败 | 检查 sub.url 是否为 Clash 格式；`curl -v 订阅URL` 测连通性 |
+| provider 报 `path is not subpath` | config 里 path 改相对路径 `providers/sub1.yaml` |
+| `Illegal instruction` | 二进制不是 armv5（armv7 版必然崩溃）；UPX 版必须用 3.96 + NRV2E |
 | 路由器断网 | `/usercfg/zproxy/boot.sh stop` 立即恢复直连 |
-| 重启后没自启 | 桥接模式或插件状态未启用，手动 start 即可 |
+| 重启后没自启 | 见第五章，手动 start 即可 |
 
 ---
 
@@ -395,8 +436,8 @@ telnet 192.168.1.50
 > [!WARNING] 警告
 > 本方案仅通过 jffs2 挂载点添加文件，不修改 rootfs、不修改分区表、不刷写引导。
 
+- 开机自启依赖外网可达下载源；离线场景用分片备选方案（见 2.4 提示）
 - 原厂固件升级会重写 rootfs 和插件分区，zproxy 文件可能被清除
-- 三个插件分区与厂商守护进程共存，分区写满（95%）属正常
 - TUN 已关闭（旁挂模式避免路由冲突），使用 mixed-port 7890 手动代理
 - 如果设置了无效订阅，mihomo 启动后可能导致设备无法通过子路由上网（用 stop 恢复）
 
@@ -410,19 +451,11 @@ telnet 192.168.1.50
 ```
 
 ```bash
-rm -rf /usercfg/zproxy /UUPlugin/zproxy /status/zproxy /DPIPlugin/zproxy
+rm -rf /usercfg/zproxy /DPITMP/zproxy
 ```
 
 ```bash
 rm -f /UUPlugin/uuplugin /UUPlugin/uu.conf
-```
-
-```bash
-rm -rf /owdptsplugin/bin/owdpts
-```
-
-```bash
-rm -f /tmp/.zproxy_boot_marker /tmp/.uu_hook.log /tmp/start_out
 ```
 
 ```bash
@@ -432,10 +465,10 @@ sync
 执行完后验证：
 
 ```bash
-ls /usercfg/zproxy /UUPlugin/zproxy /status/zproxy /DPIPlugin/zproxy 2>&1
+ls /usercfg/zproxy 2>&1
 ```
 
-四条都报 No such file or directory 即卸载完成。重启路由器后回到原厂状态。
+报 No such file or directory 即卸载完成。重启路由器后回到原厂状态。
 
 ### 8.3 恢复出厂（编程器/物理方案）
 
@@ -457,10 +490,12 @@ ls /usercfg/zproxy /UUPlugin/zproxy /status/zproxy /DPIPlugin/zproxy 2>&1
 | 密钥推导 | `E2631` + `edfd0d95511` 拼接后反转后半段 → `E263111559d0dfde` |
 | 密钥位置 | 内核 Image（zImage 解压后）0x52f484 附近 |
 | kernel1 | 明文 uImage（zImage 自解压 + DTB 尾部） |
-| kernel2 | 28MB 备份槽（2025 版动态调整） |
+| kernel2 | 备份槽（versionstates 可查双槽地址与序列号） |
 | rootfs 加密 | 开机 jffs2 挂载时由内核读路径透明解密 |
 | mtdblock0 裸写 | 厂商虚拟层临时视图，**重启丢弃**，不可用于持久化 |
-| busybox 陷阱 | v1.17.2 无 dd skip/head/tail/od，md5sum 大文件崩溃 |
+| 官方升级包 | 免签名（header_offset=0）；刷写窗口由 ver_header +0x1E0/+0x1E4 声明；rootfs 余量仅 ~51KB |
+| busybox 陷阱 | v1.17.2 无 dd skip/head/tail/od/env/pidof，md5sum 大文件崩溃 |
+| UPX 陷阱 | 必须 armv5 二进制 + UPX 3.96 + 默认 NRV2E；5.x 版或 `--lzma` 在本机分别 SIGILL / SIGSEGV |
 
 > [!IMPORTANT] 重要
 > 2025-09 与 2024-09 两版固件的分区表布局**完全不同**（kernel2/rootfs 起始地址变了），网上的分区表资料对不上号时，先确认固件版本。
@@ -471,7 +506,7 @@ ls /usercfg/zproxy /UUPlugin/zproxy /status/zproxy /DPIPlugin/zproxy 2>&1
 
 ---
 
-> **文档版本：** 2026-08-29
+> **文档版本：** 2026-08-30（v10 网络加载版）
 > **适用设备：** 中兴 ZXHN E2631（巡天AX3000）
 > **适用系统：** 原厂固件 2025-09（Linux 4.1.25）
 > **参考项目：** MetaCubeX/mihomo · Zephyruso/zashboard · 1234205a/zte-sr1010-research
