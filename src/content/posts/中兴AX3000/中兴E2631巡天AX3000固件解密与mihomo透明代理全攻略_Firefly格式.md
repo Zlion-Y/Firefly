@@ -178,6 +178,7 @@ graph TD
 
 ### 3.1 准备工作
 
+0. **先使用`free`命令查看可用内存要保证在80MB以上，不然一跑mihomo就挂了，跑起来也是所有节点全部超时，根本无法使用。**
 1. 把打包好的 `mihomo_armv5_upx`（13,621,624 字节）传到某个可被路由器 HTTP 下载的位置：GitHub Release（国内直连不稳时在 dl.url 里加一行 ghproxy 类镜像地址）或自有服务器/NAS，**目前脚本已内置了我的下载直链但不保证长久可用性和后续程序更新**；
 2. 把地址填进 `dl.url`（每行一个，从上到下依次尝试）；
 3. MobaXterm：Session → **Telnet** → 路由器 IP → 登录（admin）；**Tools → HTTP Server** → 目录选 `mihomo` → 端口 **8000** → Start；记下 PC 局域网 IP（示例 192.168.1.100）。
