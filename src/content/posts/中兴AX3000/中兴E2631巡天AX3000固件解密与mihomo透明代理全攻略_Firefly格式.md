@@ -1,10 +1,10 @@
 ---
-title: 中兴 E2631 巡天AX3000 固件解密与 mihomo 透明代理全攻略
+title: 中兴 E2631 巡天AX3000 固件解密与 mihomo TUN代理全攻略
 published: 2026-08-29
 updated: 2026-08-30
 description: 中兴 ZXHN E2631 固件逆向全记录：分区加密密钥推导、mihomo 移植、内存爆满事故复盘与 UPX+GOMEMLIMIT 优化、开机自动拉取程序的网络加载方案
 image: ./zproxy-cover.png
-tags: [固件逆向, mihomo, ZTE, 透明代理]
+tags: [固件逆向, mihomo, ZTE]
 category: 路由器
 draft: false
 pinned: false
@@ -286,6 +286,8 @@ start_mihomo() {
 
 ## 四、使用指南
 
+原厂内核只能使用TUN模式。
+
 ### 4.1 启动 / 停止
 
 ```bash
@@ -353,13 +355,13 @@ telnet 路由器IP
 > [!NOTE] 提示
 > 脚本和配置已持久化在 /usercfg，重启不丢；本体开机自动拉取。路由器日常不重启的话，启动一次就一直有效。
 
-### 5.2 进阶：官方升级包注入钩子（已验证格式）
+### 5.2 进阶：官方升级包注入脚本（已验证格式）
 
-通过官方 Web 升级通道（supgrade.html）刷入"加了一行钩子"的官方固件包，可以彻底解决自启。逆向结论：
+通过官方 Web 升级通道（supgrade.html）刷入"加了一行自启脚本"的官方固件包，可以彻底解决自启。逆向结论：
 
 - 官方升级包与 SR1010 同构（outer magic `99999999 44444444...` + ver_header），当前渠道下发的包**本身就是免签名的**（header_offset=0，VerifySign 跳过）；
 - 包内 rootfs 用同一把 AES-128-ECB 密钥（`E263111559d0dfde`），可解包、修改、重加密，CRC 链（hdr_crc → hdr_crc2 → kernel CRC → fs CRC）全部可离线重算；
-- 刷写窗口由包的 ver_header +0x1E0/+0x1E4 字段声明（本机为 0x700000~0x2300000），rootfs 分区固定 18.9MB，仅剩 ~51KB 节点余量——**恰好够注入几 KB 的开机钩子**（调用 /usercfg/zproxy/boot.sh），程序本体则由钩子开机自动拉取，两者完美互补。
+- 刷写窗口由包的 ver_header +0x1E0/+0x1E4 字段声明（本机为 0x700000~0x2300000），rootfs 分区固定 18.9MB，仅剩 ~51KB 节点余量——**恰好够注入几 KB 的开机脚本**（调用 /usercfg/zproxy/boot.sh），程序本体则由脚本开机自动拉取，两者完美互补。
 
 ---
 
