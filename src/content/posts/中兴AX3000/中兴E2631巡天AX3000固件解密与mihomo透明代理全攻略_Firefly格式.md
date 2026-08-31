@@ -180,7 +180,7 @@ graph TD
 
 1. 把打包好的 `mihomo_armv5_upx`（13,621,624 字节）传到某个可被路由器 HTTP 下载的位置：GitHub Release（国内直连不稳时在 dl.url 里加一行 ghproxy 类镜像地址）或自有服务器/NAS，**目前脚本已内置了我的下载直链但不保证长久可用性和后续程序更新**；
 2. 把地址填进 `dl.url`（每行一个，从上到下依次尝试）；
-3. MobaXterm：Session → **Telnet** → 路由器 IP → 登录（admin）；**Tools → HTTP Server** → 目录选 `MobaXterm部署包/上传到路由器的文件` → 端口 **8000** → Start；记下 PC 局域网 IP（示例 192.168.1.100）。
+3. MobaXterm：Session → **Telnet** → 路由器 IP → 登录（admin）；**Tools → HTTP Server** → 目录选 `mihomo` → 端口 **8000** → Start；记下 PC 局域网 IP（示例 192.168.1.100）。
 
 ### 3.2 上传脚本与配置（路由器侧）
 
