@@ -174,11 +174,11 @@ graph TD
 ## 三、部署步骤（MobaXterm 全图形操作）
 
 > [!NOTE] 提示
-> 配套文件见 `MobaXterm部署包/` 目录：boot.sh、config_base.yaml、dl.url、sub.url——一共 4 个小文件，本地持久占用约 6KB。
+> [脚本文件下载](https://wwbnc.lanzoub.com/impOF45nnc2f) 目录：boot.sh、config_base.yaml、dl.urll——一共 3 个小文件，本地持久占用约 6KB。
 
 ### 3.1 准备工作
 
-1. 把打包好的 `mihomo_armv5_upx`（13,621,624 字节）传到某个可被路由器 HTTP 下载的位置：GitHub Release（国内直连不稳时在 dl.url 里加一行 ghproxy 类镜像地址）或自有服务器/NAS；
+1. 把打包好的 `mihomo_armv5_upx`（13,621,624 字节）传到某个可被路由器 HTTP 下载的位置：GitHub Release（国内直连不稳时在 dl.url 里加一行 ghproxy 类镜像地址）或自有服务器/NAS，**目前脚本已内置了我的下载直链但不保证长久可用性和后续程序更新**；
 2. 把地址填进 `dl.url`（每行一个，从上到下依次尝试）；
 3. MobaXterm：Session → **Telnet** → 路由器 IP → 登录（admin）；**Tools → HTTP Server** → 目录选 `MobaXterm部署包/上传到路由器的文件` → 端口 **8000** → Start；记下 PC 局域网 IP（示例 192.168.1.100）。
 
@@ -314,7 +314,7 @@ echo "https://你的Clash订阅URL" > /usercfg/zproxy/sub.url
 /usercfg/zproxy/boot.sh restart
 ```
 
-换 mihomo 版本：本地重新 UPX 打包 → 传到下载源 → 覆盖 dl.url 即可（改 `MIHOMO_SIZE` 同步新字节数）。
+换 mihomo 版本：本地重新 UPX 打包 → 传到下载源 → 覆盖 dl.url 即可.
 
 ### 4.3 面板
 
@@ -334,7 +334,7 @@ ps | grep mihomo
 grep -E "MemFree|MemAvailable" /proc/meminfo
 ```
 
-合格标准：RSS 约 50MB 且**长时间不增长**；MemAvailable 稳定在 35MB 以上。若 RSS 持续上涨，检查启动环境里 `GOMEMLIMIT` 是否生效（`cat /DPITMP/zproxy/run.sh` 应有 export 行）。
+合格标准：RSS 约 60MB 且**长时间不增长**；MemAvailable 稳定在 20MB 左右。若 RSS 持续上涨，检查启动环境里 `GOMEMLIMIT` 是否生效（`cat /DPITMP/zproxy/run.sh` 应有 export 行）。
 
 ---
 
