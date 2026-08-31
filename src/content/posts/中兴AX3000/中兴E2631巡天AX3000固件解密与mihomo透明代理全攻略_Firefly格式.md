@@ -4,8 +4,8 @@ published: 2026-08-29
 updated: 2026-08-30
 description: 中兴 ZXHN E2631 固件逆向全记录：分区加密密钥推导、mihomo 移植、内存爆满事故复盘与 UPX+GOMEMLIMIT 优化、开机自动拉取程序的网络加载方案
 image: ./zproxy-cover.png
-tags: [路由器, 固件逆向, mihomo, ZTE, 透明代理]
-category: 运维教程
+tags: [固件逆向, mihomo, ZTE, 透明代理]
+category: 路由器
 draft: false
 pinned: false
 slug: zte-e2631-zproxy-mihomo
@@ -498,15 +498,8 @@ ls /usercfg/zproxy 2>&1
 | UPX 陷阱 | 必须 armv5 二进制 + UPX 3.96 + 默认 NRV2E；5.x 版或 `--lzma` 在本机分别 SIGILL / SIGSEGV |
 
 > [!IMPORTANT] 重要
-> 2025-09 与 2024-09 两版固件的分区表布局**完全不同**（kernel2/rootfs 起始地址变了），网上的分区表资料对不上号时，先确认固件版本。
-
----
-
-::github{repo="MetaCubeX/mihomo"}
-
----
-
-> **文档版本：** 2026-08-30（v10 网络加载版）
-> **适用设备：** 中兴 ZXHN E2631（巡天AX3000）
-> **适用系统：** 原厂固件 2025-09（Linux 4.1.25）
-> **参考项目：** MetaCubeX/mihomo · Zephyruso/zashboard · 1234205a/zte-sr1010-research
+- 2025-09 与 2024-09 两版固件的分区表布局**完全不同**（kernel2/rootfs 起始地址变了），网上的分区表资料对不上号时，先确认固件版本。
+- **文档版本：** 2026-08-30（v10 网络加载版）
+- **适用设备：** 中兴 ZXHN E2631（巡天AX3000）
+- **适用系统：** 原厂固件 2025-09（Linux 4.1.25）
+- **参考项目：** MetaCubeX/mihomo · Zephyruso/zashboard · 1234205a/zte-sr1010-research· cnjn/ZXSLC_SR1010
