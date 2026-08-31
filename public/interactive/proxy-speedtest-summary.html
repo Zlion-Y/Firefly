@@ -29,7 +29,7 @@
 <body>
 <div class="wrap">
   <h1>子路由代理下载测速总结</h1>
-  <div class="sub">192.168.5.22 中兴 E2631（双核）· Mihomo v1.19.30 · 旧节点 VMess / 新节点 SS · 2026-08-30</div>
+  <div class="sub">192.168.5.22 / .11 中兴 E2631（双核）· Mihomo v1.19.30 · 旧节点 VMess / 新节点 SS / IEPL 专线 · 2026-08-30 ~ 08-31</div>
 
   <div class="card">
     <h2>📊 测速结果对比</h2>
@@ -43,22 +43,34 @@
   </div>
 
   <div class="card">
+    <h2>📈 新设备 192.168.5.11 · IEPL 节点实测</h2>
+    <table>
+      <tr><th>指标</th><th>Google 源（dl.google.com）</th><th>GitHub 源</th><th>说明</th></tr>
+      <tr><td>单线程</td><td class="hl">91.9 Mbps</td><td>32.6 Mbps</td><td>多线程 mihomo，双核均可参与</td></tr>
+      <tr><td>8 路并发</td><td>79.0 Mbps</td><td>44.7 Mbps</td><td>持续压测采样峰值 140-165 Mbps</td></tr>
+      <tr><td>结论</td><td colspan="3" class="ok">IEPL 节点不限速 —— 之前 GitHub 源测出的 ~66 Mbps 是「节点→GitHub CDN」线路差，不是节点带宽；测速源选择决定结论，Google 系源才能反映真实带宽</td></tr>
+    </table>
+    <div class="note">⚠️ 新设备吞吐（140-165 Mbps）远超旧设备单核极限（~55 Mbps），多线程代理实现能吃满双核——瓶颈在代理实现能否用上双核，而非内核路径。</div>
+  </div>
+
+  <div class="card">
     <h2>🖥️ CPU / 内存状态（子路由 top）</h2>
     <table>
       <tr><th>状态</th><th>CPU</th><th>代理进程 m5upx</th><th>Load</th></tr>
-      <tr><td>压测满载</td><td>usr 37.5% + sirq 12.5% · idle 50%</td><td class="hl">45.7%</td><td>2.07</td></tr>
+      <tr><td>压测满载（top 快照）</td><td>usr 37.5% + sirq 12.5% · idle 50%</td><td class="hl">45.7%</td><td>2.07</td></tr>
+      <tr><td>整周期采样（/proc/stat）</td><td colspan="3"><span class="tag tag-red">cpu0 100% 持续 ~240s</span> · <span class="tag tag-green">cpu1 全程 0%</span> · load1 峰值 <b class="hl">4.04</b>（2 核 load 破 4，排队全挤在核 0）</td></tr>
       <tr><td>彻底空载</td><td>idle 100%</td><td>0%</td><td>0.60</td></tr>
-      <tr><td>每核采样（压测中）</td><td colspan="3"><span class="tag tag-red">cpu0 100%（满载）</span> <span class="tag tag-green">cpu1 0%（闲置）</span> ← 单核瓶颈实锤</td></tr>
-      <tr><td>内存</td><td colspan="3" class="ok">202MB used / 605MB cached（可回收）· 全程无压力</td></tr>
+      <tr><td>内存</td><td colspan="3" class="ok">202MB used / 605MB cached（可回收）· 压测中 MemFree 最低 10.9MB，全程无压力</td></tr>
     </table>
-    <div class="note">⚠️ 判定 CPU 瓶颈看 top 的 idle%/sirq%，不要看 loadavg（含 D 状态任务 jffs2 水分，空载时 load 仍可高达 2.17）。</div>
+    <div class="note">⚠️ 判定 CPU 瓶颈看 /proc/stat 的 cpu0/cpu1 差分与 top 的 idle%/sirq%，不要看 loadavg（含 D 状态任务 jffs2 水分，空载时 load 仍可高达 2.17）。</div>
   </div>
 
   <div class="card">
     <h2>🎯 核心结论</h2>
     <table>
       <tr><th style="width:120px">结论</th><th>依据</th><th style="width:140px">建议</th></tr>
-      <tr><td class="hl">单核瓶颈</td><td>代理进程单线程 + 网卡软中断全部绑定核 0，核 1 完全闲置</td><td>换设备优先<b>单核性能</b>，核数意义不大</td></tr>
+      <tr><td class="hl">旧设备单核瓶颈</td><td>单线程代理实现：cpu0 100% 持续 ~4 分钟、cpu1 全程 0%，load1 峰值 4.04，8 路并发极限 54.6 Mbps</td><td>升级<b>多线程代理实现</b>，让双核都干活</td></tr>
+      <tr><td class="ok">新设备双核可用</td><td>多线程 mihomo 双核均可参与，IEPL 节点 + Google 源实测 140-165 Mbps，节点不限速</td><td>确认节点走 IEPL 专线，测速用 Google 系源</td></tr>
       <tr><td>旧节点极限</td><td>8 路并发 CPU 满载实测 54.6 Mbps</td><td>日常多线程下载（IDM/aria2）吃满</td></tr>
       <tr><td class="warn">新节点（SS）更慢</td><td>35 vs 54.6 Mbps（约 -36%）；新旧均 AEAD 加密、开销相近，差异指向<b>新节点线路/带宽限速</b>（35 Mbps 时核 0 是否满载未确认）</td><td>确认新节点线路 / 换回旧 VMess 节点</td></tr>
       <tr><td>内存健康</td><td>~830MB 总量，缓存可回收，零压力</td><td>无需处理</td></tr>
