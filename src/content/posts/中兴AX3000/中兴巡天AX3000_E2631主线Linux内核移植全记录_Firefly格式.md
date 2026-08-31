@@ -33,7 +33,7 @@ graph LR
     F --> G[开源仓库发布]
 ```
 
-最终成果：主线内核 **6.18.38** 已在真实硬件上从 U-Boot 启动到交互式 busybox shell，TPROXY / TUN / nftables / zram 等特性全部验证通过，mihomo 可跑在 armv5 软浮点二进制下，且全部源码、工具、一键编译脚本已开源，别人可以直接拉取复现。
+最终成果：主线内核 **6.18.38** 已在真实硬件上从 U-Boot 启动到交互式 busybox shell，TPROXY / TUN / nftables / zram 等特性全部验证通过，mihomo 可跑在 armv5 软浮点二进制下，且全部源码、工具、一键编译脚本已开源，可以直接拉取复现。
 
 ---
 
