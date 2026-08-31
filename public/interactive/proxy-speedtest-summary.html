@@ -29,16 +29,16 @@
 <body>
 <div class="wrap">
   <h1>子路由代理下载测速总结</h1>
-  <div class="sub">192.168.5.22 中兴 E2631（双核）· Mihomo v1.19.30 · 2026-08-30</div>
+  <div class="sub">192.168.5.22 中兴 E2631（双核）· Mihomo v1.19.30 · 旧节点 VMess / 新节点 SS · 2026-08-30</div>
 
   <div class="card">
     <h2>📊 测速结果对比</h2>
     <table>
-      <tr><th>指标</th><th>旧节点</th><th>新 SS 节点</th><th>说明</th></tr>
+      <tr><th>指标</th><th>旧节点（VMess）</th><th>新节点（SS）</th><th>说明</th></tr>
       <tr><td>单线程</td><td class="hl">28.6 Mbps</td><td class="hl">19.8 Mbps</td><td>单连接 TCP 限制，与 CPU 无关</td></tr>
       <tr><td>8 路并发</td><td class="hl">54.6 Mbps</td><td class="hl">35.0 Mbps</td><td>CPU 满载时极限吞吐</td></tr>
       <tr><td>并发增益</td><td>1.9x</td><td>1.8x</td><td>多线程可吃满单核</td></tr>
-      <tr><td>相对旧节点</td><td>基准</td><td class="warn">-36%</td><td>新节点整体更慢</td></tr>
+      <tr><td>相对旧节点</td><td>基准</td><td class="warn">-36%</td><td>均 AEAD 加密、开销相近，差异指向新节点线路限速</td></tr>
     </table>
   </div>
 
@@ -60,7 +60,7 @@
       <tr><th style="width:120px">结论</th><th>依据</th><th style="width:140px">建议</th></tr>
       <tr><td class="hl">单核瓶颈</td><td>代理进程单线程 + 网卡软中断全部绑定核 0，核 1 完全闲置</td><td>换设备优先<b>单核性能</b>，核数意义不大</td></tr>
       <tr><td>旧节点极限</td><td>8 路并发 CPU 满载实测 54.6 Mbps</td><td>日常多线程下载（IDM/aria2）吃满</td></tr>
-      <tr><td class="warn">新 SS 节点更慢</td><td>35 vs 54.6 Mbps（约 -36%），可能节点限速或 SS 加密更耗 CPU</td><td>检查节点带宽 / 换回旧节点</td></tr>
+      <tr><td class="warn">新节点（SS）更慢</td><td>35 vs 54.6 Mbps（约 -36%）；新旧均 AEAD 加密、开销相近，差异指向<b>新节点线路/带宽限速</b>（35 Mbps 时核 0 是否满载未确认）</td><td>确认新节点线路 / 换回旧 VMess 节点</td></tr>
       <tr><td>内存健康</td><td>~830MB 总量，缓存可回收，零压力</td><td>无需处理</td></tr>
       <tr><td class="warn">HTTPS 异常</td><td>走代理 HTTPS 全部 TLS 握手失败（curl exit 35）</td><td>排查节点 TLS 质量</td></tr>
     </table>

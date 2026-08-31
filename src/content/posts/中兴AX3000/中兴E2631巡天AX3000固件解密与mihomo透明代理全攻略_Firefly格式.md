@@ -365,7 +365,7 @@ telnet 路由器IP
 
 ## 六、性能实测（UPX 内存优化版）
 
-[交互式测速总结页](/interactive/test.html)
+[交互式测速总结页](/interactive/proxy-speedtest-summary.html)
 
 ### 6.1 单线程 / 并发下载实测（GitHub 大文件）
 
@@ -376,7 +376,6 @@ telnet 路由器IP
 | 并发增益 | 1.9x | 1.8x | 多线程可吃满单核 |
 | 相对 VMess | 基准 | -36% | 新 SS 节点整体更慢 |
 
-（同为 VMess 香港Z10 节点，GitHub 突发测得过 3.35 MB/s ≈ 27 Mbps，与上表同一量级）
 
 > [!NOTE] 提示
 > 日常用多线程下载工具（IDM/aria2）即可吃满 ~55 Mbps；单线程应用受 TCP 单连接限制只有 ~28 Mbps。VMess 的 `cipher: auto` 在无硬件 AES 的 A9 上实际使用 chacha20-ietf-poly1305（纯软件），比 SS 的软浮点 AES-256-GCM 更省 CPU——这也是 SS 节点并发吞吐低 36% 的原因之一。
