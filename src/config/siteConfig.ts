@@ -129,7 +129,7 @@ export const siteConfig: SiteConfig = {
 		// "static"：不固定，随页面滚动消失
 		// "fixed"：固定在顶部常显
 		// "dynamic"：固定在顶部，下滑隐藏、轻微上滑显示
-		navbarMode: "dynamic",
+		navbarMode: "fixed",
 	},
 
 	// 站点开始日期，用于统计运行天数

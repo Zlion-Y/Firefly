@@ -102,7 +102,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		children: [
 			{
 				name: "GitHub",
-				url: "https://github.com/ynbl07",
+				url: "https://github.com/Zlion-Y",
 				external: true,
 				icon: "fa7-brands:github",
 			},
