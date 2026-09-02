@@ -4,7 +4,7 @@ published: 2026-08-31
 updated: 2026-08-31
 description: 从固件解密、SoC 逆向到 6.18.38 主线内核上板验证的完整记录，覆盖 mihomo 全功能适配、Windows 交叉编译与开源复现流程
 image: ./e2631-cover.png
-tags: [Linux内核, 逆向工程, ZX279128S, mihomo, 嵌入式]
+tags: [Linux内核, 逆向工程, ZX279128S, 嵌入式]
 category: 路由器
 draft: false
 pinned: false
@@ -14,6 +14,10 @@ slug: zte-e2631-mainline-linux-port
 > 本文档面向嵌入式开发与路由器逆向爱好者，完整记录中兴巡天 AX3000（E2631）从固件解密、SoC 逆向、交叉编译到主线内核上板验证的全过程，并给出 mihomo（Clash.Meta）全功能适配的配置与开源复现方式。
 > **适用系统：** Windows 10/11（MSYS2 构建） / WSL2（可选提速）
 > **适用平台：** 中兴 ZTE ZXHN E2631（巡天 AX3000，ZX279128S）
+
+---
+
+::github{repo="Zlion-Y/e2631-mainline-zx279128s"}
 
 ---
 
