@@ -31,12 +31,6 @@ function isHeroFullscreenLayout(): boolean {
 	);
 }
 
-function isHeroFullscreenLayout(): boolean {
-	return (
-		document.documentElement.getAttribute("data-fullscreen-layout") === "hero"
-	);
-}
-
 export function updateFullscreenTitleParallax(): void {
 	const html = document.documentElement;
 	const overlay = document.getElementById("banner-overlay-container");
