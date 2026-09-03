@@ -96,14 +96,6 @@ html {
 }
 
 @layer components {
-    /* 自定义元素强制隐藏：部分移动端 WebView 对 <widget-layout> 自定义元素的
-       display:none 处理存在边界情况（元素默认 inline，动画/升级时机导致 hidden 被忽略），
-       导致本应隐藏的组件（如非文章页的目录组件）内容泄漏到页面中。 */
-    widget-layout[hidden],
-    widget-layout.hidden {
-        display: none !important;
-    }
-
     /* View Transitions API 主题切换动画 */
     /* 为整个文档根元素设置视图过渡 */
     ::view-transition-old(root),

@@ -233,9 +233,6 @@ const siteLogo = await getSiteLogo();
       ))
     }
 
-    <!-- iOS Safari 主屏图标（不配则使用默认灰板图标） -->
-    <link rel="apple-touch-icon" sizes="180x180" href={url("/favicon/apple-touch-icon.png")} />
-
     <!-- 为特定域名的图片添加 referrerpolicy 以解决 403 问题 -->
     <!-- 注：静态图片（ImageWrapper 组件、Markdown 正文图）已在构建期加好 referrerpolicy；
          此脚本仅作为运行时兜底，处理动态注入的图片（解密内容、第三方评论/统计部件等）。 -->
