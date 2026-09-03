@@ -363,26 +363,6 @@ export function applyWallpaperModeToDocument(
 ): void {
 	const html = document.documentElement;
 	const prevMode = html.getAttribute("data-wallpaper-mode");
-	const isHeroFullscreen =
-		html.getAttribute("data-fullscreen-layout") === "hero";
-	const isClassicFullscreenTransition =
-		html.getAttribute("data-fullscreen-layout") === "classic" &&
-		(prevMode === WALLPAPER_FULLSCREEN || mode === WALLPAPER_FULLSCREEN);
-	const contentPanel = isClassicFullscreenTransition
-		? (document.querySelector(".content-panel") as HTMLElement | null)
-		: null;
-	const contentPanelStartTop = contentPanel?.getBoundingClientRect().top;
-
-	// hero 全屏 banner↔fullscreen 切换：捕获 wallpaper 进模式前的视觉位置，用于 transform FLIP，
-	// 掩藏页面滚动时 position:absolute↔fixed 的 containing block 切换造成的锚点跳变
-	const isHeroBannerToggle =
-		isHeroFullscreen &&
-		((prevMode === WALLPAPER_BANNER && mode === WALLPAPER_FULLSCREEN) ||
-			(prevMode === WALLPAPER_FULLSCREEN && mode === WALLPAPER_BANNER));
-	const wallpaperWrapper = isHeroBannerToggle
-		? (document.getElementById("wallpaper-wrapper") as HTMLElement | null)
-		: null;
-	const wrapperStartTop = wallpaperWrapper?.getBoundingClientRect().top;
 
 	// 先启用过渡类再设置模式：确保 --content-top 变化时 top 过渡已激活（否则位置瞬间到位不动画）
 	if (animate) {
@@ -430,22 +410,18 @@ export function applyWallpaperModeToDocument(
 	}
 
 	// 首页标题显示：按当前模式 + 是否首页同步 hidden 类（SSR 按 config 默认模式渲染 hidden，
-	// 模式运行时切换后需同步）。放在标题动画之前，让下方动画的 !contains("hidden") 判断拿到最新状态。
+	// 模式运行时切换后需同步）。
 	syncBannerHomeTextVisibility();
 
 	// 卡片透明类：唯一运行时写入者（解析期由 body 起始脚本写入）
-	const transparent =
-		mode === WALLPAPER_OVERLAY ||
-		(mode === WALLPAPER_FULLSCREEN &&
-			html.getAttribute("data-fullscreen-layout") === "hero");
+	const transparent = mode === "overlay" || mode === "fullscreen";
 	document.body.classList.toggle("wallpaper-transparent", transparent);
 
 	// 标题上下移动动画：banner ↔ fullscreen 切换时 wrapper 高度瞬时变化，
 	// 用 transform 补偿后滑到居中位置（首页标题可见时才动画）
 	if (
-		isHeroFullscreen &&
-		((mode === WALLPAPER_FULLSCREEN && prevMode === WALLPAPER_BANNER) ||
-			(mode === WALLPAPER_BANNER && prevMode === WALLPAPER_FULLSCREEN))
+		(mode === WALLPAPER_FULLSCREEN && prevMode === WALLPAPER_BANNER) ||
+		(mode === WALLPAPER_BANNER && prevMode === WALLPAPER_FULLSCREEN)
 	) {
 		const title = document.querySelector(
 			".banner-home-text-overlay",
