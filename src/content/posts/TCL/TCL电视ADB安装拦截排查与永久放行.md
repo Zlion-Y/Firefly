@@ -152,8 +152,20 @@ adb shell content update --uri content://com.tcl.providers.config/InstallConfig 
 adb shell am force-stop com.android.packageinstaller
 ```
 
+**手机（甲壳虫 ADB）**——第一条改配置：
+
+```bash
+content update --uri content://com.tcl.providers.config/InstallConfig --bind config_content:s:false
+```
+
+**手机（甲壳虫 ADB）**——第二条重启验证器：
+
+```bash
+am force-stop com.android.packageinstaller
+```
+
 > [!TIP] 建议
-> 手机端命令特意设计成零引号：`false` 值不含引号和冒号，解析器读到它同样走「解析异常 → 无策略 → 放行」路径，效果与完整 JSON 等价。**电脑端也用同款零引号写法**——Windows PowerShell 5.1 与 7 给外部程序传参的行为不同，带多层引号的长命令在 5.1 上会丢引号导致写入坏数据，零引号写法在两个版本行为完全一致。**每条命令执行前都确认设备在线。**
+> 两个渠道的命令都设计成零引号：`false` 值不含引号和冒号，解析器读到它同样走「解析异常 → 无策略 → 放行」路径，效果与完整 JSON 等价。**电脑端也用同款零引号写法**——Windows PowerShell 5.1 与 7 给外部程序传参的行为不同，带多层引号的长命令在 5.1 上会丢引号导致写入坏数据，零引号写法在两个版本行为完全一致。**每条命令执行前都确认设备在线。**
 
 验证写入结果：
 
@@ -174,7 +186,7 @@ adb install xxx.apk
 ```
 
 > [!NOTE] 提示
-> `content` 命令的 `--bind` 参数按冒号分段解析，JSON 内的冒号必须转义（PowerShell 中写作 `\:`、引号写作反引号），这是本方案最隐蔽的坑；零引号的手机端写法天然免疫此问题。
+> `content` 命令的 `--bind` 参数按冒号分段解析，任何含 JSON 的命令里冒号都必须转义——这也是第 5 节恢复命令比解锁复杂的原因。解锁因为用了零引号的 `false` 值，两个渠道都天然免疫此问题。
 
 ---
 
