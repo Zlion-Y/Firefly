@@ -1,7 +1,7 @@
 ---
 title: TCL/雷鸟电视 ADB 安装拦截排查与永久放行
 published: 2026-08-28
-updated: 2026-08-28
+updated: 2026-09-05
 description: 定位 TCL/雷鸟电视系统安装器拦截 ADB 安装的验证组件，通过改写 InstallConfig 配置实现免禁用、免脚本的永久放行
 image: ./cover.png
 tags: [ADB, TCL电视, Android, 逆向分析, 运维教程]
@@ -136,22 +136,28 @@ graph TD
 
 把 `InstallConfig` 的总开关改写为 `false`，验证器读不到可用策略即放行。**安装器全程保持启用，开机无影响，重启后依然生效。**
 
-> [!IMPORTANT] 两条命令任选其一，不要都执行
-> 下面给出的是**同一个操作**在两种终端里的写法，效果完全相同，按你正在使用的终端**二选一**即可。两者只是引号和反斜杠的转义规则不同——把 Git Bash 版粘贴进 PowerShell（或反过来）会因转义错位导致写入失败，先后执行两条则是在做两次重复写入。
->
-> 分不清自己在哪个终端？看提示符：`user@主机名` 开头的是 Git Bash，`PS C:\...` 开头的是 PowerShell。
+> [!IMPORTANT] 电脑 / 手机两个渠道任选其一
+> 下面给出电脑（PowerShell）和手机（甲壳虫 ADB）两种写法，**效果完全相同，选一个执行即可**，不要都执行。
+> 手机端有一个前置条件：先在甲壳虫里连接电视并**确认设备在线**。连接断开后输入的任何命令都会报 `no devices/emulators found`，且报错会被界面吞掉——这是「命令没生效」最常见的原因。
 
-Git Bash：
-
-```bash
-adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{\"enable\"\\:\"false\"}' --where \"project_id='InstallConfig'\""
-```
-
-PowerShell：
+**电脑（PowerShell）：**
 
 ```powershell
 adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{`"enable`"\:`"false`"}' --where `"project_id='InstallConfig'`""
+
+adb shell am force-stop com.android.packageinstaller
 ```
+
+**手机（甲壳虫 ADB，零引号免转义）：**
+
+```bash
+content update --uri content://com.tcl.providers.config/InstallConfig --bind config_content:s:false
+
+am force-stop com.android.packageinstaller
+```
+
+> [!TIP] 建议
+> 手机端命令特意设计成零引号：`false` 值不含引号和冒号，解析器读到它同样走「解析异常 → 无策略 → 放行」路径，效果与完整 JSON 等价，还能完全避开手机 App 传输层的转义坑。**每条命令执行前都确认设备在线。**
 
 验证写入结果：
 
@@ -165,8 +171,11 @@ adb shell content query --uri content://com.tcl.providers.config/InstallConfig -
 Row: 0 config_content={"enable":"false"}
 ```
 
-> [!TIP] 建议
-> 写入后如果电视上正有安装会话在跑，建议执行 `adb shell am force-stop com.android.packageinstaller` 让验证器进程重启、重新读取配置。
+或手机端写入后的：
+
+```text
+Row: 0 config_content=false
+```
 
 之后安装直接：
 
@@ -175,20 +184,36 @@ adb install xxx.apk
 ```
 
 > [!NOTE] 提示
-> `content` 命令的 `--bind` 参数按冒号分段解析，JSON 内的冒号必须写成 `\:` 转义，这是本方案最隐蔽的坑。
+> `content` 命令的 `--bind` 参数按冒号分段解析，JSON 内的冒号必须转义（PowerShell 中写作 `\:`、引号写作反引号），这是本方案最隐蔽的坑；零引号的手机端写法天然免疫此问题。
 
 ---
 
 ## 5. 恢复原始拦截
 
-想恢复 TCL 原始策略时，把总开关改回 `true` 即可：
+想恢复 TCL 原始策略时，把配置写回**完整的原厂策略数组**即可。
 
-> [!NOTE] 说明
-> 这里只列 Git Bash 写法；PowerShell 用户请把第 4 节 PowerShell 命令中的 `false` 改成 `true` 执行，同样二选一。
+> [!CAUTION] 注意
+> 恢复**必须**写回下面完整的策略 JSON。只写 `{"enable":"true"}` 这种短形式，解析器照样按异常处理，拦截并不会恢复。恢复命令含引号和转义，若在手机端执行失败，改用电脑端即可（不影响已解锁状态）。
+
+**电脑（PowerShell）：**
+
+```powershell
+adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:[{`"enable`"\\:`"true`",`"strategies`"\\:[{`"name`"\\:`"safeStrategy`",`"enable`"\\:`"true`",`"priority`"\\:`"0`"},{`"name`"\\:`"blackListStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"1`"},{`"name`"\\:`"thridStrategy`",`"enable`"\\:`"false`",`"packages`"\\:[`"com.dangbeimarket`",`"com.shafa.market`",`"com.ant.store.appstore`"],`"priority`"\\:`"2`"},{`"name`"\\:`"launcherStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"3`"},{`"name`"\\:`"overDueStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"4`"},{`"name`"\\:`"pmStrategy`",`"enable`"\\:`"true`",`"priority`"\\:`"5`"}]}]' --where `"project_id='InstallConfig'`""
+```
+
+**手机（甲壳虫 ADB）：**
 
 ```bash
-adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{\"enable\"\\:\"true\"}' --where \"project_id='InstallConfig'\""
+content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:[{"enable"\\:"true","strategies"\\:[{"name"\\:"safeStrategy","enable"\\:"true","priority"\\:"0"},{"name"\\:"blackListStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"1"},{"name"\\:"thridStrategy","enable"\\:"false","packages"\\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\\:"2"},{"name"\\:"launcherStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"3"},{"name"\\:"overDueStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"4"},{"name"\\:"pmStrategy","enable"\\:"true","priority"\\:"5"}]}]' --where "project_id='InstallConfig'"
 ```
+
+恢复后同样重启验证器：
+
+```bash
+am force-stop com.android.packageinstaller
+```
+
+验证：查询命令同第 4 节，输出应为 `[{"enable":"true","strategies":[...]}]`。
 
 原始配置全文（备份用）：
 
@@ -233,7 +258,11 @@ finally {
 
 **Q：写入命令报 `Binding not well formed`？**
 
-JSON 里的冒号没有转义。每个 `:` 必须写成 `\:`（Git Bash 中写作 `\\:`，PowerShell 中写作 `` \` `` + `:`）。
+JSON 里的冒号没有转义（电脑 PowerShell 版冒号写作 `\:`、双反斜杠写作 `\\:`；手机端恢复命令的冒号必须写成 `\\:`）。拿不准就优先用第 4 节的零引号手机端解锁命令，天然免疫此问题。
+
+**Q：手机端命令执行了但毫无反应？**
+
+甲壳虫与电视的连接已断开。先在 app 里重连 `192.168.5.6:5555` 并确认设备在线，再执行命令；每条命令执行前都确认在线。
 
 **Q：写入成功但仍报 `INSTALL_FAILED_VERIFICATION_FAILURE`？**
 
@@ -253,6 +282,6 @@ TCL 云端配置同步可能覆盖了本地配置，重新执行第 4 节的写�
 
 ---
 
-> **文档版本：** 2026-08-28
+> **文档版本：** 2026-09-05
 > **适用设备：** TCL 电视 mt5879_cn 方案（Android 11），其他 TCL/雷鸟机型可参考
 > **适用平台：** Wi-Fi ADB / USB ADB
