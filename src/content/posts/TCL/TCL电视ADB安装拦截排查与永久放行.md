@@ -143,7 +143,7 @@ graph TD
 **电脑（PowerShell）**——第一条改配置：
 
 ```powershell
-adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{`"enable`"\:`"false`"}' --where `"project_id='InstallConfig'`""
+adb shell content update --uri content://com.tcl.providers.config/InstallConfig --bind config_content:s:false
 ```
 
 **电脑（PowerShell）**——第二条重启验证器：
@@ -152,20 +152,8 @@ adb shell "content update --uri content://com.tcl.providers.config/InstallConfig
 adb shell am force-stop com.android.packageinstaller
 ```
 
-**手机（甲壳虫 ADB，零引号免转义）**——第一条改配置：
-
-```bash
-content update --uri content://com.tcl.providers.config/InstallConfig --bind config_content:s:false
-```
-
-**手机（甲壳虫 ADB）**——第二条重启验证器：
-
-```bash
-am force-stop com.android.packageinstaller
-```
-
 > [!TIP] 建议
-> 手机端命令特意设计成零引号：`false` 值不含引号和冒号，解析器读到它同样走「解析异常 → 无策略 → 放行」路径，效果与完整 JSON 等价，还能完全避开手机 App 传输层的转义坑。**每条命令执行前都确认设备在线。**
+> 手机端命令特意设计成零引号：`false` 值不含引号和冒号，解析器读到它同样走「解析异常 → 无策略 → 放行」路径，效果与完整 JSON 等价。**电脑端也用同款零引号写法**——Windows PowerShell 5.1 与 7 给外部程序传参的行为不同，带多层引号的长命令在 5.1 上会丢引号导致写入坏数据，零引号写法在两个版本行为完全一致。**每条命令执行前都确认设备在线。**
 
 验证写入结果：
 
@@ -173,13 +161,7 @@ am force-stop com.android.packageinstaller
 adb shell content query --uri content://com.tcl.providers.config/InstallConfig --projection config_content
 ```
 
-输出应为：
-
-```text
-Row: 0 config_content={"enable":"false"}
-```
-
-或手机端写入后的：
+输出应为（电脑 / 手机端相同）：
 
 ```text
 Row: 0 config_content=false
@@ -203,10 +185,18 @@ adb install xxx.apk
 > [!CAUTION] 注意
 > 恢复**必须**写回下面完整的策略 JSON。只写 `{"enable":"true"}` 这种短形式，解析器照样按异常处理，拦截并不会恢复。恢复命令含引号和转义，若在手机端执行失败，改用电脑端即可（不影响已解锁状态）。
 
-**电脑（PowerShell）：**
+**电脑（PowerShell）**——本地生成恢复脚本 → 推送到电视 → 执行（三行按顺序，PowerShell 5.1 和 7 均实测可用）：
 
 ```powershell
-adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:[{`"enable`"\\:`"true`",`"strategies`"\\:[{`"name`"\\:`"safeStrategy`",`"enable`"\\:`"true`",`"priority`"\\:`"0`"},{`"name`"\\:`"blackListStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"1`"},{`"name`"\\:`"thridStrategy`",`"enable`"\\:`"false`",`"packages`"\\:[`"com.dangbeimarket`",`"com.shafa.market`",`"com.ant.store.appstore`"],`"priority`"\\:`"2`"},{`"name`"\\:`"launcherStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"3`"},{`"name`"\\:`"overDueStrategy`",`"enable`"\\:`"true`",`"packages`"\\:[],`"priority`"\\:`"4`"},{`"name`"\\:`"pmStrategy`",`"enable`"\\:`"true`",`"priority`"\\:`"5`"}]}]' --where `"project_id='InstallConfig'`""
+Set-Content -NoNewline -Encoding Ascii $env:TEMP\restore.sh 'content update --uri content://com.tcl.providers.config/InstallConfig --bind ''config_content:s:[{"enable"\\:"true","strategies"\\:[{"name"\\:"safeStrategy","enable"\\:"true","priority"\\:"0"},{"name"\\:"blackListStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"1"},{"name"\\:"thridStrategy","enable"\\:"false","packages"\\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\\:"2"},{"name"\\:"launcherStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"3"},{"name"\\:"overDueStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"4"},{"name"\\:"pmStrategy","enable"\\:"true","priority"\\:"5"}]}]'' --where "project_id=''InstallConfig''"'
+```
+
+```powershell
+adb push $env:TEMP\restore.sh /data/local/tmp/restore.sh
+```
+
+```powershell
+adb shell sh /data/local/tmp/restore.sh
 ```
 
 **手机（甲壳虫 ADB）：**
@@ -266,7 +256,7 @@ finally {
 
 **Q：写入命令报 `Binding not well formed`？**
 
-JSON 里的冒号没有转义（电脑 PowerShell 版冒号写作 `\:`、双反斜杠写作 `\\:`；手机端恢复命令的冒号必须写成 `\\:`）。拿不准就优先用第 4 节的零引号手机端解锁命令，天然免疫此问题。
+JSON 里的冒号转义错了位：手机端恢复命令的冒号必须写成 `\\:`（双反斜杠），写成单反斜杠就会报这个错。电脑端恢复用「本地脚本 + push」方式，转义已内置，无需手改。解锁则永远可以用零引号写法，天然免疫此问题。
 
 **Q：手机端命令执行了但毫无反应？**
 
