@@ -140,19 +140,27 @@ graph TD
 > 下面给出电脑（PowerShell）和手机（甲壳虫 ADB）两种写法，**效果完全相同，选一个执行即可**，不要都执行。
 > 手机端有一个前置条件：先在甲壳虫里连接电视并**确认设备在线**。连接断开后输入的任何命令都会报 `no devices/emulators found`，且报错会被界面吞掉——这是「命令没生效」最常见的原因。
 
-**电脑（PowerShell）：**
+**电脑（PowerShell）**——第一条改配置：
 
 ```powershell
 adb shell "content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:{`"enable`"\:`"false`"}' --where `"project_id='InstallConfig'`""
+```
 
+**电脑（PowerShell）**——第二条重启验证器：
+
+```powershell
 adb shell am force-stop com.android.packageinstaller
 ```
 
-**手机（甲壳虫 ADB，零引号免转义）：**
+**手机（甲壳虫 ADB，零引号免转义）**——第一条改配置：
 
 ```bash
 content update --uri content://com.tcl.providers.config/InstallConfig --bind config_content:s:false
+```
 
+**手机（甲壳虫 ADB）**——第二条重启验证器：
+
+```bash
 am force-stop com.android.packageinstaller
 ```
 
