@@ -200,7 +200,7 @@ adb install xxx.apk
 **电脑（PowerShell）**——本地生成恢复脚本 → 推送到电视 → 执行（三行按顺序，PowerShell 5.1 和 7 均实测可用）：
 
 ```powershell
-Set-Content -NoNewline -Encoding Ascii $env:TEMP\restore.sh 'content update --uri content://com.tcl.providers.config/InstallConfig --bind ''config_content:s:[{"enable"\\:"true","strategies"\\:[{"name"\\:"safeStrategy","enable"\\:"true","priority"\\:"0"},{"name"\\:"blackListStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"1"},{"name"\\:"thridStrategy","enable"\\:"false","packages"\\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\\:"2"},{"name"\\:"launcherStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"3"},{"name"\\:"overDueStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"4"},{"name"\\:"pmStrategy","enable"\\:"true","priority"\\:"5"}]}]'' --where "project_id=''InstallConfig''"'
+Set-Content -NoNewline -Encoding Ascii $env:TEMP\restore.sh 'content update --uri content://com.tcl.providers.config/InstallConfig --bind ''config_content:s:[{"enable"\:"true","strategies"\:[{"name"\:"safeStrategy","enable"\:"true","priority"\:"0"},{"name"\:"blackListStrategy","enable"\:"true","packages"\:[],"priority"\:"1"},{"name"\:"thridStrategy","enable"\:"false","packages"\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\:"2"},{"name"\:"launcherStrategy","enable"\:"true","packages"\:[],"priority"\:"3"},{"name"\:"overDueStrategy","enable"\:"true","packages"\:[],"priority"\:"4"},{"name"\:"pmStrategy","enable"\:"true","priority"\:"5"}]}]'' --where "project_id=''InstallConfig''"'
 ```
 
 ```powershell
@@ -214,7 +214,7 @@ adb shell sh /data/local/tmp/restore.sh
 **手机（甲壳虫 ADB）：**
 
 ```bash
-content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:[{"enable"\\:"true","strategies"\\:[{"name"\\:"safeStrategy","enable"\\:"true","priority"\\:"0"},{"name"\\:"blackListStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"1"},{"name"\\:"thridStrategy","enable"\\:"false","packages"\\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\\:"2"},{"name"\\:"launcherStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"3"},{"name"\\:"overDueStrategy","enable"\\:"true","packages"\\:[],"priority"\\:"4"},{"name"\\:"pmStrategy","enable"\\:"true","priority"\\:"5"}]}]' --where "project_id='InstallConfig'"
+content update --uri content://com.tcl.providers.config/InstallConfig --bind 'config_content:s:[{"enable"\:"true","strategies"\:[{"name"\:"safeStrategy","enable"\:"true","priority"\:"0"},{"name"\:"blackListStrategy","enable"\:"true","packages"\:[],"priority"\:"1"},{"name"\:"thridStrategy","enable"\:"false","packages"\:["com.dangbeimarket","com.shafa.market","com.ant.store.appstore"],"priority"\:"2"},{"name"\:"launcherStrategy","enable"\:"true","packages"\:[],"priority"\:"3"},{"name"\:"overDueStrategy","enable"\:"true","packages"\:[],"priority"\:"4"},{"name"\:"pmStrategy","enable"\:"true","priority"\:"5"}]}]' --where "project_id='InstallConfig'"
 ```
 
 恢复后同样重启验证器：
@@ -268,7 +268,7 @@ finally {
 
 **Q：写入命令报 `Binding not well formed`？**
 
-JSON 里的冒号转义错了位：手机端恢复命令的冒号必须写成 `\\:`（双反斜杠），写成单反斜杠就会报这个错。电脑端恢复用「本地脚本 + push」方式，转义已内置，无需手改。解锁则永远可以用零引号写法，天然免疫此问题。
+JSON 里的冒号转义错了位：手机端恢复命令的冒号必须写成 `\:`（单反斜杠），写成 `\\:`（双反斜杠）反而会报这个错。电脑端恢复用「本地脚本 + push」方式，转义已内置，无需手改。解锁则永远可以用零引号写法，天然免疫此问题。
 
 **Q：手机端命令执行了但毫无反应？**
 
