@@ -189,7 +189,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 背景透明度(opacity)不适用（全屏壁纸不透明）；导航栏透明模式由 fullscreen.navbar.transparentMode 控制，脱离 banner 的 navbar 配置
 	fullscreen: {
 		// 布局模式："classic" 经典文档流全屏壁纸，"hero" 固定全屏首屏壁纸
-		layout: "hero",
+		layout: "classic",
 		// 图片位置
 		position: "center",
 		// 全屏壁纸模式的导航栏配置
