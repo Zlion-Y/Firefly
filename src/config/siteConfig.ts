@@ -11,7 +11,7 @@ const pages = resolvePageToggles({
 	// ── 社交 (Social) ──────────────────────────────────
 
 	// 友链页面开关
-	friends: false,
+	friends: true,
 	// 留言板页面开关，需要配置评论系统
 	guestbook: true,
 
@@ -52,7 +52,7 @@ export const siteConfig: SiteConfig = {
 
 	// 站点描述
 	description:
-		"Zlion ----记录折腾博客搭建教程、分享教程，技术探索与生活记录，都在这里。",
+		"记录折腾博客搭建教程、分享教程，技术探索与生活记录，都在这里。",
 
 	// 站点关键词
 	keywords: [
@@ -252,7 +252,7 @@ export const siteConfig: SiteConfig = {
 		// 沉浸阅读配置：电脑端文章详情页右下角按钮，进入后只留文章卡片+左侧目录
 		immersiveReading: {
 			// 总开关：false 则不显示按钮
-			enable: true,
+			enable: false,
 			// 进入文章页是否默认开启沉浸阅读
 			defaultOn: false,
 			// 沉浸阅读中是否显示目录栏
