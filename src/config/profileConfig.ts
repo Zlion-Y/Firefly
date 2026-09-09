@@ -39,5 +39,11 @@ export const profileConfig: ProfileConfig = {
 			url: "mailto:shiyan@zlion.top",
 			showName: false,
 		},
+		{
+			name: "Atom",
+			icon: "fa7-solid:atom",
+			url: "/atom/",
+			showName: false,
+		},
 	],
 };
