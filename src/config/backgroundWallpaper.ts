@@ -36,12 +36,14 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	 * ],
 	 */
 	src: {
-		// 必应每日壁纸随机图 API（uapis.cn）
-		// format=image 直接返回图片；resolution 仅支持 1080(w=1920) 或 4k(3840px)
-		// 实测体积波动大：1080 约 145~670KB，4k 约 255KB~2.5MB（取决于壁纸细节）
-		// random=true 每次请求随机返回一张历史壁纸；可加 date=YYYY-MM-DD 指定日期（与 random 互斥）
-		// 本接口属官方「免费层(0 积分)」：无需 API Key、不消耗访客月度额度，仅按 IP 防滥用限速 4 次/秒
-		// 注意响应头为 Cache-Control: no-store，每次页面访问都会重新拉取一张
+		// 必应壁纸随机图 API：bing.liushen.fun（EdgeOne 托管，实测比 uapis 快 20~60 倍）
+		// /api/random?redirect=true → 302 跳到 /picture/YYYY-MM-DD.webp，每次请求随机换一天
+		//   · 302 无缓存头、Content-Length 0，实测 TTFB 约 90ms，所以每次刷新都会换图
+		//   · 目标静态图带 public,max-age=31536000,immutable，浏览器一年内直接读磁盘缓存
+		//   · 原图 2560×1440，体积 172KB~1.24MB（波动大，取决于壁纸细节）
+		// 静态图支持 EdgeOne 图片处理：拼 ?imageMogr2/thumbnail/1920x/quality/78 可压到 85~558KB
+		//   但缩放参数无法与 /api/random 的 302 叠加，只有在已知具体日期时才能手动拼接
+		// /picture/index.json 是最近 30 天的清单（带 CORS）；目录只保留 30 天，更早日期会 404
 		// 桌面背景图片（支持单张或多张随机）
 		// desktop: "assets/images/DesktopWallpaper/d1.avif",
 		desktop: 
@@ -49,7 +51,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/DesktopWallpaper/tree2d.avif",
 		//	"assets/images/DesktopWallpaper/jianlai.jpg",
 		//	"assets/images/DesktopWallpaper/mountain.jpg",
-			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
+			"https://bing.liushen.fun/api/random?redirect=true",
 		// 移动背景图片（支持单张或多张随机）
 		// mobile: "assets/images/MobileWallpaper/m1.avif",
 		mobile: 
@@ -58,7 +60,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/MobileWallpaper/map.png",
 		//	"assets/images/MobileWallpaper/ship.png",
 		//	"assets/images/MobileWallpaper/tree2m.avif",
-			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
+			"https://bing.liushen.fun/api/random?redirect=true",
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
