@@ -36,6 +36,12 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	 * ],
 	 */
 	src: {
+		// 必应每日壁纸随机图 API（uapis.cn）
+		// format=image 直接返回图片；resolution 仅支持 1080(w=1920) 或 4k(3840px)
+		// 实测体积波动大：1080 约 145~670KB，4k 约 255KB~2.5MB（取决于壁纸细节）
+		// random=true 每次请求随机返回一张历史壁纸；可加 date=YYYY-MM-DD 指定日期（与 random 互斥）
+		// 本接口属官方「免费层(0 积分)」：无需 API Key、不消耗访客月度额度，仅按 IP 防滥用限速 4 次/秒
+		// 注意响应头为 Cache-Control: no-store，每次页面访问都会重新拉取一张
 		// 桌面背景图片（支持单张或多张随机）
 		// desktop: "assets/images/DesktopWallpaper/d1.avif",
 		desktop: 
@@ -43,7 +49,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/DesktopWallpaper/tree2d.avif",
 		//	"assets/images/DesktopWallpaper/jianlai.jpg",
 		//	"assets/images/DesktopWallpaper/mountain.jpg",
-			"https://uapis.cn/api/get-image-bing-daily?format=image&resolution=1920&mkt=zh-CN",
+			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
 		
 		// 移动背景图片（支持单张或多张随机）
 		// mobile: "assets/images/MobileWallpaper/m1.avif",
@@ -53,7 +59,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/MobileWallpaper/map.png",
 		//	"assets/images/MobileWallpaper/ship.png",
 		//	"assets/images/MobileWallpaper/tree2m.avif",
-			"https://uapis.cn/api/get-image-bing-daily?format=image&resolution=1920&mkt=zh-CN",
+			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
 		
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
