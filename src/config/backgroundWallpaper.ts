@@ -50,7 +50,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/DesktopWallpaper/jianlai.jpg",
 		//	"assets/images/DesktopWallpaper/mountain.jpg",
 			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
-		
 		// 移动背景图片（支持单张或多张随机）
 		// mobile: "assets/images/MobileWallpaper/m1.avif",
 		mobile: 
@@ -60,7 +59,6 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		//	"assets/images/MobileWallpaper/ship.png",
 		//	"assets/images/MobileWallpaper/tree2m.avif",
 			"https://uapis.cn/api/v1/image/bing-daily?format=image&resolution=1080&random=true",
-		
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
@@ -70,7 +68,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 横幅壁纸和全屏壁纸共享配置
 	common: {
 		// 壁纸遮罩暗度，让横幅文字显示更清晰，0-1之间，值越大越暗
-		dimOpacity: 0.2,
+		dimOpacity: 0.5,
 		// 多视频播放模式："order" 顺序循环，"random" 随机切换（仅当 playerUrl 为数组时生效）
 		playerMode: "random",
 		// 主页横幅文字
