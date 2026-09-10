@@ -38,28 +38,28 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	src: {
 		// 桌面背景图片（支持单张或多张随机）
 		// desktop: "assets/images/DesktopWallpaper/d1.avif",
-		desktop: [
+		desktop: 
 		//	"assets/images/DesktopWallpaper/girld.jpg",
 		//	"assets/images/DesktopWallpaper/tree2d.avif",
 		//	"assets/images/DesktopWallpaper/jianlai.jpg",
 		//	"assets/images/DesktopWallpaper/mountain.jpg",
-			"shturl.cc/hwMICm5ecVTAOZxsosZ84FbiiA68lTwhxeUGTeMgyvU4eiXFhArmewEeoUl2DxmyaIEjgn",
-		],
+			"https://uapis.cn/api/get-image-bing-daily?format=image&resolution=1920&mkt=zh-CN",
+		,
 		// 移动背景图片（支持单张或多张随机）
 		// mobile: "assets/images/MobileWallpaper/m1.avif",
-		mobile: [
+		mobile: 
 		//	"assets/images/MobileWallpaper/cloud.png",
 		//	"assets/images/MobileWallpaper/girlm.jpg",
 		//	"assets/images/MobileWallpaper/map.png",
 		//	"assets/images/MobileWallpaper/ship.png",
 		//	"assets/images/MobileWallpaper/tree2m.avif",
-			"shturl.cc/hwMICm5ecVTAOZxsosZ84FbiiA68lTwhxeUGTeMgyvU4eiXFhArmewEeoUl2DxmyaIEjgn",
-		],
+			"https://uapis.cn/api/get-image-bing-daily?format=image&resolution=1920&mkt=zh-CN",
+		,
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
 		// playerUrl: "/assets/videos/firefly.mp4",
-		playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4",
+		// playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4",
 	},
 	// 横幅壁纸和全屏壁纸共享配置
 	common: {
