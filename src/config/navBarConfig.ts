@@ -56,14 +56,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "#",
 		icon: "material-symbols:person",
 		children: [
-			// 个人主页
-			{
-				name: "主页",
-				url: "https://www.zlion.top",
-				external: true,
-				icon: "material-symbols:home",
-			},
-
 			// 动态
 			LinkPresets.Dynamic,
 
@@ -111,6 +103,12 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		icon: "material-symbols:link",
 		// 子菜单
 		children: [
+			{
+				name: "主页",
+				url: "https://www.zlion.top",
+				external: true,
+				icon: "material-symbols:home",
+			},
 			{
 				name: "GitHub",
 				url: "https://github.com/Zlion-Y",
