@@ -108,7 +108,7 @@ function loop() {
 用的是高德免费 Web 服务 API，三个请求并行：
 
 1. `v3/ip`：IP 定位。**注意它通常只给到省级**（比如"湖北省"）；
-2. 拿定位返回的 `rectangle`（范围两角坐标）取**中点**，调 `v3/geocode/regeo` 逆地理编码，解析出市/区级的城市名和 adcode——这样天气就能显示"黄冈"而不是"湖北"；
+2. 拿定位返回的 `rectangle`（范围两角坐标）取**中点**，调 `v3/geocode/regeo` 逆地理编码，解析出市/区级的城市名和 adcode——这样天气就能显示"武汉"而不是"湖北"；
 3. `v3/weather/weatherInfo`：`extensions=base` 取实况（温度/湿度/风向），`extensions=all` 取未来 4 天预报画曲线。
 
 两个 API 坑：
