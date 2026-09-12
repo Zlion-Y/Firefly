@@ -141,5 +141,5 @@ GitHub 建仓库后 Vercel 导入即可，Framework 自动识别 Vite，零配�
 仓库在 [Zlion-Y/zlion-home](https://github.com/Zlion-Y/zlion-home)，欢迎参考/自用。回头看这次重写的收获：
 
 1. **参考布局思路而不是搬代码**——原版的重依赖一个都没带进来；
-2. **动效手感直接抄自己的成熟项目**（FluentPlayer 的 tilt 参数），比凭感觉调快得多；
+2. **动效手感直接抄成熟项目**（FluentPlayer 的 tilt 参数），比凭感觉调快得多；
 3. 排查问题时印象最深的两课：CSS `forwards` 会压住内联 transform；本地 preview 反复重启会残留进程占端口 + 浏览器缓存 index.html，两者叠加会造成"改了代码没效果"的假象——验证前先确认自己看到的是最新构建。
