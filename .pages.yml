@@ -1,0 +1,231 @@
+# Pages CMS 配置（https://app.pagescms.org）
+# 字段与 src/content.config.ts 中的 Astro 内容集合 schema 一一对应；
+# 留空的字段保存时会被自动省略，交给 Astro 的 zod 默认值处理，不会写出 null/""。
+
+media:
+  input: public/images
+  output: /images
+  rename: random
+
+content:
+  # ── 文章 ─────────────────────────────────────────────
+  - name: posts
+    label: 文章
+    type: collection
+    path: src/content/posts
+    format: yaml-frontmatter
+    filename:
+      template: '{year}-{month}-{day}-{primary}.md'
+      field: create
+    view:
+      fields: [title, published, draft, category]
+      primary: title
+      sort: [published]
+      default:
+        sort: published
+        order: desc
+    # 集合会把目录里的图片也当成条目列出，这里按文件名排除已有配图；
+    # 以后新图请通过 CMS 的 Media 上传（存到 public/images），不要再放进本目录
+    exclude:
+      [300.png, 330.png, MXSetting.png, TFTP.png, TTL.png, Transfer.png, cover-tel.png, cover-ttl.png, cover.png, e2631-cover.png, fileserver-cover.png, gms-cover.png, gms-crash-loop.png, gms-crash-stack.png, hero.png, lenovo-pro16-2021-amd-hackintosh-figure-01.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-02.png, lenovo-pro16-2021-amd-hackintosh-figure-03.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-04.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-05.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-06.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-07.jpeg, lenovo-pro16-2021-amd-hackintosh-figure-08.png, lenovo-pro16-2021-amd-hackintosh-figure-09.png, lenovo-pro16-2021-amd-hackintosh-figure-10.png, lenovo-pro16-2021-amd-hackintosh-figure-11.jpg, tag.png, ui-mockup.png, zproxy-cover.png]
+    fields:
+      - name: title
+        label: 标题
+        type: string
+        required: true
+      - name: published
+        label: 发布日期
+        type: date
+        required: true
+      - name: updated
+        label: 更新日期
+        type: date
+        default: ''
+      - name: draft
+        label: 草稿
+        type: boolean
+        default: false
+      - name: description
+        label: 摘要
+        type: text
+      - name: image
+        label: 封面图
+        type: image
+      - name: category
+        label: 分类
+        type: string
+      - name: tags
+        label: 标签
+        type: string
+        list: true
+      - name: pinned
+        label: 置顶
+        type: boolean
+        default: false
+      - name: lang
+        label: 语言
+        type: string
+        description: 留空跟随站点默认；可选 zh-CN / zh-TW / en / ja / ru / ko
+      - name: author
+        label: 作者
+        type: string
+      - name: comment
+        label: 开启评论
+        type: boolean
+        default: true
+      - name: password
+        label: 访问密码
+        type: string
+        description: 留空则不加密
+      - name: passwordHint
+        label: 密码提示
+        type: string
+      - name: series
+        label: 系列名
+        type: string
+      - name: seriesOrder
+        label: 系列序号
+        type: number
+      - name: sourceLink
+        label: 原文链接
+        type: string
+      - name: licenseName
+        label: 许可证名称
+        type: string
+      - name: licenseUrl
+        label: 许可证链接
+        type: string
+      - name: body
+        label: 正文
+        type: rich-text
+
+  # ── 动态 ─────────────────────────────────────────────
+  - name: dynamic
+    label: 动态
+    type: collection
+    path: src/content/dynamic
+    format: yaml-frontmatter
+    filename: '{year}-{month}-{day}-{hour}{minute}{second}.md'
+    view:
+      fields: [published, pinned, location]
+      primary: published
+      sort: [published]
+      default:
+        sort: published
+        order: desc
+    fields:
+      - name: published
+        label: 发布时间
+        type: date
+        required: true
+        options:
+          time: true
+          format: 'yyyy-MM-dd HH:mm:ss'
+      - name: pinned
+        label: 置顶
+        type: boolean
+        default: false
+      - name: location
+        label: 位置
+        type: string
+      - name: body
+        label: 内容
+        type: rich-text
+
+  # ── 项目 ─────────────────────────────────────────────
+  - name: projects
+    label: 项目
+    type: collection
+    path: src/content/projects
+    format: yaml-frontmatter
+    filename:
+      template: '{primary}.md'
+      field: create
+    exclude: [images]
+    view:
+      fields: [title, published, status, order]
+      primary: title
+      sort: [published]
+      default:
+        sort: published
+        order: desc
+    fields:
+      - name: title
+        label: 项目名
+        type: string
+        required: true
+      - name: published
+        label: 发布日期
+        type: date
+        required: true
+      - name: draft
+        label: 草稿
+        type: boolean
+        default: false
+      - name: order
+        label: 排序权重
+        type: number
+        description: 越大越靠前
+      - name: description
+        label: 描述
+        type: text
+      - name: image
+        label: 封面图
+        type: image
+      - name: status
+        label: 状态
+        type: select
+        options:
+          values: [planning, developing, published, archived]
+          placeholder: 未设置
+      - name: tags
+        label: 标签
+        type: string
+        list: true
+      - name: lang
+        label: 语言
+        type: string
+      - name: link
+        label: 相关链接
+        type: object
+        list: true
+        fields:
+          - name: label
+            label: 名称
+            type: string
+          - name: icon
+            label: 图标
+            type: string
+            description: Iconify 图标名，如 fa7-brands:github
+          - name: value
+            label: 链接地址
+            type: string
+      - name: body
+        label: 详情
+        type: rich-text
+
+  # ── 独立页面 ─────────────────────────────────────────
+  # about/friends/guestbook 的路由在主题里是写死的，禁用新建/重命名/删除
+  - name: spec
+    label: 独立页面
+    type: collection
+    path: src/content/spec
+    format: yaml-frontmatter
+    operations:
+      create: false
+      rename: false
+      delete: false
+    view:
+      fields: [title, description]
+      primary: title
+    fields:
+      - name: title
+        label: 页面标题
+        type: string
+      - name: description
+        label: 页面描述
+        type: string
+      - name: body
+        label: 页面内容
+        type: text
+        description: 原始 Markdown 源码模式；friends.mdx 含 JSX 语法，请勿改成富文本
