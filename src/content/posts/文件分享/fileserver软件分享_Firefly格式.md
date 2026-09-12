@@ -15,6 +15,7 @@ category: 运维
 draft: false
 pinned: false
 slug: fileserver-single-binary
+author: 世琰
 ---
 > 本文档面向想在服务器 / NAS / 路由器上自建文件分享服务的用户，涵盖功能介绍、三种部署方式与安全设计。
 > **适用系统：** Linux（amd64 / arm64 / armv7 / armv5 / mipsle / 386）/ Windows / macOS
