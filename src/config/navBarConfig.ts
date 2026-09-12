@@ -104,7 +104,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		// 子菜单
 		children: [
 			{
-				name: "主页",
+				name: "我的主页",
 				url: "https://www.zlion.top",
 				external: true,
 				icon: "material-symbols:home",
