@@ -6,6 +6,8 @@ description: 记录 Z503 通过 Telnet 扩容分区，升级为公版的过程.
 image: ./cover.png
 tags: [Z503, Telnet]
 category: 路由器
+series: 中兴路由器
+seriesOrder: 3
 draft: false
 slug: z503-to-public
 author: zlion

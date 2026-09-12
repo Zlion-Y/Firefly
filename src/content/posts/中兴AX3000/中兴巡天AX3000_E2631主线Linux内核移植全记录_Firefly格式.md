@@ -6,6 +6,8 @@ description: 从固件解密、SoC 逆向到 6.18.38 主线内核上板验证的
 image: ./e2631-cover.png
 tags: [Linux内核, 逆向工程, ZX279128S, 嵌入式]
 category: 路由器
+series: 中兴路由器
+seriesOrder: 5
 draft: false
 pinned: false
 slug: zte-e2631-mainline-linux-port

@@ -5,6 +5,8 @@ updated: 2026-08-04
 description: E2633刷入官方公版后的config.bin解密、本机信息优化、本地Web上传固件和官方系统升级研究部分。
 tags: [E2631,  Telnet, fw-flashing]
 category: 路由器
+series: 中兴路由器
+seriesOrder: 2
 draft: false
 pinned: false
 slug: e2631-research-telnet

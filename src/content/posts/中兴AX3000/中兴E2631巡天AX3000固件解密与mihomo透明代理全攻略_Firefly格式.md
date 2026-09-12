@@ -6,6 +6,8 @@ description: 中兴 ZXHN E2631 固件逆向全记录：分区加密密钥推导�
 image: ./zproxy-cover.png
 tags: [固件逆向, mihomo, ZTE]
 category: 路由器
+series: 中兴路由器
+seriesOrder: 4
 draft: false
 pinned: false
 slug: zte-e2631-zproxy-mihomo

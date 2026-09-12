@@ -6,6 +6,8 @@ description: 记录 E2633通过 TTL 进入 U-Boot 后，使用 Nand Write 官方
 image: ./cover-ttl.png
 tags: [E2633, TTL，U-Boot]
 category: 路由器
+series: 中兴路由器
+seriesOrder: 1
 draft: false
 slug: e2633-research-ttl
 author: zlion
