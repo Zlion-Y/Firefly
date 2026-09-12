@@ -9,10 +9,10 @@ export const profileConfig: ProfileConfig = {
 	avatar: "assets/images/avatar.avif",
 
 	// 名字
-	name: "Zlion",
+	name: "Shiyan",
 
 	// 个人签名
-	bio: "Hello, I'm Zlion.",
+	bio: "Hello, I'm Shiyan.",
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons
@@ -21,16 +21,16 @@ export const profileConfig: ProfileConfig = {
 	// `pnpm add @iconify-json/<icon-set-name>`
 	// showName: true 时显示图标和名称，false 时只显示图标
 	links: [
-		{
-			name: "qq",
-			icon: "fa7-brands:qq",
-			url: "https://qm.qq.com/cgi-bin/qm/qr?k=tGentY2vA2KhwMlJKVoxACRnwX9vMUzQ",
-			showName: false,
-		},
+		//{
+		//	name: "qq",
+		//	icon: "fa7-brands:qq",
+		//	url: "https://qm.qq.com/cgi-bin/qm/qr?k=tGentY2vA2KhwMlJKVoxACRnwX9vMUzQ",
+		//	showName: false,
+		//},
 		{
 			name: "GitHub",
 			icon: "fa7-brands:github",
-			url: "https://github.com/ynbl07",
+			url: "https://github.com/Zlion-Y",
 			showName: false,
 		},
 		{
@@ -45,11 +45,11 @@ export const profileConfig: ProfileConfig = {
 			url: "/atom/",
 			showName: false,
 		},
-		{
-			name: "Atom",
-			icon: "fa7-solid:atom",
-			url: "/atom/",
-			showName: false,
-		},
+		//{
+		//	name: "Atom",
+		//	icon: "fa7-solid:atom",
+		//	url: "/atom/",
+		//	showName: false,
+		//},
 	],
 };
