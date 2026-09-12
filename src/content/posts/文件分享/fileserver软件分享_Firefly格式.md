@@ -136,7 +136,7 @@ sudo FS_USER=admin FS_PASS=你的密码 bash install-remote.sh
 | 需求 | 命令 |
 |------|------|
 | 换目录 / 端口 | `sudo DIR=/mnt/disk/share PORT=9000 bash install-remote.sh` |
-| 指定版本安装 | `sudo VERSION=v1.3.1 bash install-remote.sh` |
+| 指定版本安装 | `sudo VERSION=v1.3.2 bash install-remote.sh` |
 | 升级到最新版 | 重跑安装即可，自动继承已有配置与密码 |
 | 查看日志 | `journalctl -u fileserver -f` |
 | 卸载 | `sudo bash install-remote.sh --uninstall` |
@@ -225,5 +225,5 @@ graph TD
 ---
 
 > **文档版本：** 2026-09-12
-> **软件版本：** fileserver v1.3.1
+> **软件版本：** fileserver v1.3.2
 > **适用平台：** 云服务器 / 本地虚拟机 / NAS / 软路由 / Docker
