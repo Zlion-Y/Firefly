@@ -33,8 +33,11 @@
   <circle cx="266" cy="530" r="42" fill="#f8cbb4"/>
   <circle cx="758" cy="530" r="42" fill="#f8cbb4"/>
 
+  <!-- 脖子 -->
+  <rect x="446" y="660" width="132" height="190" rx="20" fill="#f8cbb4"/>
+
   <!-- 脸 -->
-  <ellipse cx="512" cy="490" rx="252" ry="242" fill="#ffdccb"/>
+  <ellipse cx="512" cy="490" rx="252" ry="246" fill="#ffdccb"/>
 
   <!-- 头发：炸毛 + 碎刘海 -->
   <path d="M 272 460
@@ -81,9 +84,9 @@
   <ellipse cx="702" cy="622" rx="50" ry="26" fill="#ffb3a8" opacity="0.6"/>
 
   <!-- 开口笑 -->
-  <path d="M 426 642 Q 512 664 598 642 Q 592 752 512 760 Q 432 752 426 642 Z" fill="#5b2a33"/>
-  <path d="M 446 650 Q 512 666 578 650 L 574 676 Q 512 690 450 676 Z" fill="#ffffff"/>
-  <ellipse cx="512" cy="738" rx="46" ry="20" fill="#f2888d"/>
+  <path d="M 434 626 Q 512 646 590 626 Q 584 716 512 724 Q 440 716 434 626 Z" fill="#5b2a33"/>
+  <path d="M 452 634 Q 512 650 572 634 L 568 660 Q 512 674 456 660 Z" fill="#ffffff"/>
+  <ellipse cx="512" cy="702" rx="44" ry="18" fill="#f2888d"/>
 
   <!-- 卫衣 -->
   <path d="M 96 1024 C 116 836 268 762 512 762 C 756 762 908 836 928 1024 Z" fill="url(#hoodieGrad)"/>
