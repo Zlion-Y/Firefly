@@ -3,13 +3,14 @@ title: "zlion-home"
 slug: zlion-home
 published: 2026-09-12
 draft: false
-description: "参考 imsyy/home 重写的个人导航主页：Vue 3 + Vite 单依赖实现毛玻璃 Bento 布局、卡片 3D 动效、高德天气与一言，构建产物 gzip 仅约 35KB，GitHub + Vercel 免费部署。"
+description: "参考 imsyy/home 重写的个人导航主页：Vue 3 + Vite，唯一运行时依赖是 vue 本身。毛玻璃 Bento 布局 + 全配置驱动的二级面板（新闻/热榜/音乐播放器/Epic 限免/历史上的今天/站点监控），免 Key 天气定位到县级；并做过一轮实测级性能治理——打开二级面板的 GPU 开销从 73% 压回底噪。"
 image: "images/zlion-home.png"
 status: "published"
 tags:
   - Vue3
   - Vite
   - 个人主页
+  - 性能优化
 link:
   - label: "GitHub"
     icon: "fa7-brands:github"
@@ -22,22 +23,24 @@ lang: "zh_CN"
 
 ::github{repo="Zlion-Y/zlion-home"}
 
-参考 [imsyy/home](https://github.com/imsyy/home)（MIT License，已存档）重写的个人导航主页，只用 Vue 本身这一个运行时依赖，构建产物 gzip 约 35KB。
+参考 [imsyy/home](https://github.com/imsyy/home)（MIT License，已存档）重写的个人导航主页：**唯一运行时依赖就是 vue 本身**，构建产物 gzip 约 60KB（JS 52KB + CSS 9KB），零环境变量部署到 Vercel。
 
 ## 特性
 
-- **Bento 网格布局**：一言、时钟、天气长卡、网站导航小卡自由拼装，移动端自动降级单列
-- **毛玻璃质感**：backdrop-filter 渐变卡片 + FluentPlayer 同款「移入才倾斜」的 3D 卡片动效
-- **实用信息聚合**：一言、实时时钟、高德天气（精确到市区，含平滑温度曲线）
-- **自定义光标涟漪**：点击波纹动效，桌面端专属
-- **极致轻量**：Vue 3.5 + Vite 7，无组件库、无状态管理库，零配置部署到 Vercel
+- **Bento 网格布局**：一言、时钟、天气长卡、网站导航小卡自由拼装，移动端自动降级单列；主页卡片在 `config.js` 里逐张开关
+- **二级「探索更多」面板**：点左上角 Logo 进入，桌面一屏六卡——每日新闻、多平台热榜、音乐播放器、Epic 限免、历史上的今天、站点监控；卡片清单与排列完全由配置数组驱动，删一项即隐藏
+- **自愈音乐播放器**：网易云歌单多源并发竞速拉取、音频探针并行选源、断链自动跳下一首，歌词同步居中、点词跳转进度
+- **免 Key 天气**：uapis 聚合接口，按访客 IP 定位到县级、IPv6 正常，含 AQI 与多日高低温平滑曲线
+- **站点监控**：`fetch(no-cors)` 由访客浏览器直连探测各站点连通性与响应耗时，绿红点实时显示，无需任何第三方监控服务
+- **毛玻璃质感与动效**：backdrop-filter 渐变卡片、FluentPlayer 同款「移入才倾斜」的 3D 卡片动效、自定义圆点光标与点击涟漪
+- **实测级性能治理**：用 `nvidia-smi` 逐层量化过每一项视觉开销——二级面板那层覆盖整屏的 `backdrop-filter` 因为采样的是"持续在变的主页"，把 GPU 从 49% 推到 73%，改成「不透明壁纸 + 只模糊卡片」后压回 38%（与空白页底噪齐平）；410 行歌单改为渐进上屏后，入场约 100ms 的主线程长任务归零
 
 ## 部署
 
 ```shell
-pnpm install
-pnpm dev      # 本地开发
-pnpm build    # 构建产物在 dist/
+npm install
+npm run dev      # 本地开发
+npm run build    # 构建产物在 dist/
 ```
 
-从选型、布局草图到动效踩坑的完整记录见博客文章[《参考 imsyy/home 重写的个人主页》](/posts/zlion-home-vue3/)。
+从选型、布局草图，到这一轮性能治理（含完整的测量方法与踩坑记录）见博客文章[《参考 imsyy/home 重写的个人主页》](/posts/zlion-home-vue3/)。
