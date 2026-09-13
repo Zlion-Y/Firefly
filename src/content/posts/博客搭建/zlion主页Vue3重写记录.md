@@ -1,7 +1,7 @@
 ---
 title: 参考 imsyy/home 重写的个人主页：Vue 3 + Vite 轻量实现与踩坑记录
 published: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-13
 description: 从 imsyy/home 出发重写一个自己的导航主页：Vue 3 + Vite 单依赖实现毛玻璃 Bento 布局、FluentPlayer 同款卡片 3D 动效、自定义光标涟漪、高德天气精确到市区与平滑温度曲线，构建产物 gzip 仅 35KB，GitHub + Vercel 免费部署
 image: ./preview.png
 tags: [Vue3, Vite, 个人主页, 前端]
@@ -143,3 +143,29 @@ GitHub 建仓库后 Vercel 导入即可，Framework 自动识别 Vite，零配�
 1. **参考布局思路而不是搬代码**——原版的重依赖一个都没带进来；
 2. **动效手感直接抄成熟项目**（FluentPlayer 的 tilt 参数），比凭感觉调快得多；
 3. 排查问题时印象最深的两课：CSS `forwards` 会压住内联 transform；本地 preview 反复重启会残留进程占端口 + 浏览器缓存 index.html，两者叠加会造成"改了代码没效果"的假象——验证前先确认自己看到的是最新构建。
+
+## 八、上线后的迭代（2026-09-13）
+
+上线第一天攒了一批体验反馈，一口气做了轮大改，这里记录几个有代表性的点。
+
+**二级「探索更多」面板**：把每日新闻、多平台热榜、音乐播放器、Epic 限免、历史上的今天、站点监控收进一屏卡片，全部在 `config.js` 里开关与排序（`panelCards` 数组顺序即布局顺序）；桌面 3 列行数自适应，手机端单列。中间踩了个很隐蔽的坑：面板给每张卡透传布局类 `class="cell"`，落在组件根元素上，被音乐卡内部"贡献格子"的同名样式命中，整张卡被压成 49px——**父组件透传的类名与组件内部类名撞车**，这类问题只有实际渲染后量尺寸才能发现。
+
+**音乐播放器**：核心逻辑照搬了 [CuteLeaf/Firefly](https://github.com/CuteLeaf/Firefly) 项目的 MusicManager——`loadVersion` 版本号丢弃过期的 play 回调、`AbortError` 静默、同曲多源降级、全败延迟跳曲。这套设计根治了快速切歌时新旧音源互相抢 `src` 的经典问题（表现为"点了没反应"）。在此之上又补了三层：
+
+- **并发竞速**：多 Meting 源同时拉歌单，谁先返回用谁（串行降级最坏要等 3 个超时）；
+- **音频探针**：点播放时并行试全部候选源——用 `preload="metadata"` 的隐藏 Audio 元素（媒体加载不受 CORS 限制、只拉头部），谁先给出元数据就播谁，挂起源不用逐个等超时；
+- **播放意图标记**：预载阶段任何源失败都保持静默，只有用户点过播放才允许出声，否则面板打开几秒后音乐自己响起来，非常灵异。
+
+歌词同步居中也修了个典型坑：滚动容器忘了 `position: relative`，歌词行的 `offsetTop` 以整张卡片为基准，多算了头部高度，当前句永远定位不到可视区。
+
+**站点监控卡**：`fetch(url, { mode: "no-cors" })` 直连探测——不透明响应即在线、请求失败即离线，和访客视角的「能否打开」完全一致。绿点红点加响应耗时，60 秒自刷新，不需要任何第三方监控服务。顺带把 GitHub 数据卡换成了这张（组件保留，配置里加回来就能显示）。
+
+**天气源切换**：高德需要 Key 且 IP 定位只到市，换成了 uapis 聚合接口——免 Key、定位到县级、自带 AQI 与多日预报，Vercel 环境变量也随之删除。文前几节保留高德方案作为踩坑记录。
+
+最后把卡片全量配置化：`homeCards`（主页开关）、`panelCards`（面板排列）、`hotPlatforms`（热榜平台与顺序）、`siteMonitors`（监控列表），都集中在 `config.js`，改完推送即生效。
+
+## 九、致谢
+
+- [imsyy/home](https://github.com/imsyy/home)——布局与功能灵感来源；
+- [CuteLeaf/Firefly](https://github.com/CuteLeaf/Firefly)——音乐播放器核心逻辑（MusicManager）来源，多源降级与失效自愈的设计非常优雅；
+- [uapis.cn](https://uapis.cn/)、[60s API](https://github.com/vikiboss/60s)、[hitokoto.cn](https://hitokoto.cn/)——免 Key 数据接口。
