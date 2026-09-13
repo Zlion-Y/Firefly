@@ -4,7 +4,7 @@ slug: zlion-home
 published: 2026-09-12
 draft: false
 description: "参考 imsyy/home 重写的个人导航主页：Vue 3 + Vite，唯一运行时依赖是 vue 本身。毛玻璃 Bento 布局 + 全配置驱动的二级面板（新闻/热榜/音乐播放器/Epic 限免/历史上的今天/站点监控），免 Key 天气定位到县级；并做过一轮实测级性能治理——打开二级面板的 GPU 开销从 73% 压回底噪。"
-image: "images/zlion-home.png"
+image: "images/zlion-home.jpg"
 status: "published"
 tags:
   - Vue3

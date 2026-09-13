@@ -3,7 +3,7 @@ title: 参考 imsyy/home 重写的个人主页：Vue 3 + Vite 从零到性能治
 published: 2026-09-12
 updated: 2026-09-13
 description: 从 imsyy/home 出发重写导航主页并持续迭代到性能治理：Vue 3 + Vite 单依赖毛玻璃 Bento 布局、全配置驱动的二级面板、多源自愈音乐播放器、免 Key 天气；并用 nvidia-smi 实测把「入场掉帧」和「GPU 拉满」两个问题拆到根因——整屏 backdrop-filter 采样活跃页面、整屏 mix-blend-mode、opacity 动画暂停毛玻璃，附完整测量方法与踩坑记录
-image: ./preview.png
+image: ./preview.jpg
 tags: [Vue3, Vite, 个人主页, 前端, 性能优化]
 category: 博客搭建
 draft: false
@@ -118,7 +118,7 @@ for (let i = 0; i < pts.length - 1; i++) {
 
 纯内联 SVG，零依赖。
 
-![主页效果：一言/时钟/天气长卡与温度曲线](./preview.png)
+![主页效果：壁纸背景 + 毛玻璃卡片（一言 / 时钟 / 天气长卡 / 网站列表）](./preview.jpg)
 
 ## 五、二级「探索更多」面板：一屏六卡，全部配置驱动
 
