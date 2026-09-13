@@ -12,7 +12,8 @@ slug: zlion-home-vue3
 author: 世琰
 ---
 
-> 本文记录给自己的导航站 [zlion.top](https://github.com/Zlion-Y/zlion-home) 从选型、上线到后来一轮完整的性能治理的全过程。
+> **在线访问：** [www.zlion.top](https://www.zlion.top) ｜ **开源仓库：** [Zlion-Y/zlion-home](https://github.com/Zlion-Y/zlion-home)
+> 本文记录给自己的导航站从选型、上线到后来一轮完整的性能治理的全过程。
 > **参考项目：** [imsyy/home](https://github.com/imsyy/home)（MIT License，已存档）
 > **技术栈：** Vue 3.5 + Vite 7，唯一运行时依赖是 vue 本身，构建产物 gzip 约 60KB
 > **部署：** GitHub + Vercel，零配置
