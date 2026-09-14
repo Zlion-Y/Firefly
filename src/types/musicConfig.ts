@@ -18,6 +18,14 @@ export type MusicPlayerConfig = {
 	// 是否在侧边栏显示音乐播放器组件
 	showInSidebar?: boolean;
 
+	// 是否使用同源的洛雪音源解析（本站自带的 /api/url，随站点一起部署在 Vercel）：
+	// 解析到直链就直接播它，解析不到或播放失败才回落到 Meting 链。
+	// 关掉（false）则完全走 Meting，行为与原来一致。
+	useBuiltinResolver?: boolean;
+
+	// 请求同源解析时使用的音质：128k / 320k / flac / flac24bit
+	quality?: string;
+
 	// Meting API 配置
 	meting?: {
 		// Meting API 地址
