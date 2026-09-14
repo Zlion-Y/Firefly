@@ -12,7 +12,7 @@ slug: zlion-home-vue3
 author: 世琰
 ---
 
-> **在线访问：** [www.zlion.top](https://www.zlion.top) ｜ **开源仓库：** [Zlion-Y/zlion-home](https://github.com/Zlion-Y/zlion-home)
+> **在线访问：** [www.zlion.top](https://www.zlion.top) ｜ **开源仓库：** [Zlion-Y/zlion-homepage](https://github.com/Zlion-Y/zlion-homepage)
 > 本文记录给自己的导航站从选型、上线到后来一轮完整的性能治理的全过程。
 > **参考项目：** [imsyy/home](https://github.com/imsyy/home)（MIT License，已存档）
 > **技术栈：** Vue 3.5 + Vite 7，唯一运行时依赖是 vue 本身，构建产物 gzip 约 60KB
@@ -307,7 +307,7 @@ GitHub 建仓库后 Vercel 导入即可，Framework 自动识别 Vite，零环�
 
 ## 十四、结语与致谢
 
-仓库在 [Zlion-Y/zlion-home](https://github.com/Zlion-Y/zlion-home)，欢迎参考/自用。回头看这次重写加迭代的收获：
+仓库在 [Zlion-Y/zlion-homepage](https://github.com/Zlion-Y/zlion-homepage)，欢迎参考/自用。回头看这次重写加迭代的收获：
 
 1. **参考布局思路而不是搬代码**——原版的重依赖一个都没带进来；
 2. **成熟设计直接照搬**——动效手感抄 FluentPlayer 的 tilt 参数，播放器容错抄 Firefly 的 MusicManager，比凭感觉调快得多；
