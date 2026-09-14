@@ -3,7 +3,7 @@ title: "zlion-home"
 slug: zlion-home
 published: 2026-09-12
 draft: false
-description: "参考 imsyy/home 重写的个人导航主页：Vue 3 + Vite，唯一运行时依赖是 vue 本身。毛玻璃 Bento 布局 + 全配置驱动的二级面板（新闻/热榜/音乐播放器/Epic 限免/历史上的今天/站点监控），免 Key 天气定位到县级；并做过一轮实测级性能治理——打开二级面板的 GPU 开销从 73% 压回底噪。"
+description: "参考 imsyy/home 重写的个人导航主页：Vue 3 + Vite，唯一运行时依赖是 vue 本身。毛玻璃 Bento 布局 + 全配置驱动的二级面板（新闻/热榜/音乐播放器/Epic 限免/历史上的今天/站点监控），免 Key 天气定位到县级；音乐播放器接上洛雪音源——自定义音源脚本跑在 serverless 函数里，VIP 曲也能拿到完整歌曲；并做过一轮实测级性能治理——打开二级面板的 GPU 开销从 73% 压回底噪。"
 image: "images/zlion-home.jpg"
 status: "published"
 tags:
@@ -11,17 +11,19 @@ tags:
   - Vite
   - 个人主页
   - 性能优化
+  - 洛雪音源
+  - serverless
 link:
   - label: "GitHub"
     icon: "fa7-brands:github"
-    value: "https://github.com/Zlion-Y/zlion-home"
+    value: "https://github.com/Zlion-Y/zlion-homepage"
   - label: "在线访问"
     icon: "material-symbols:home"
     value: "https://www.zlion.top"
 lang: "zh_CN"
 ---
 
-::github{repo="Zlion-Y/zlion-home"}
+::github{repo="Zlion-Y/zlion-homepage"}
 
 参考 [imsyy/home](https://github.com/imsyy/home)（MIT License，已存档）重写的个人导航主页：**唯一运行时依赖就是 vue 本身**，构建产物 gzip 约 60KB（JS 52KB + CSS 9KB），零环境变量部署到 Vercel。
 
@@ -30,6 +32,7 @@ lang: "zh_CN"
 - **Bento 网格布局**：一言、时钟、天气长卡、网站导航小卡自由拼装，移动端自动降级单列；主页卡片在 `config.js` 里逐张开关
 - **二级「探索更多」面板**：点左上角 Logo 进入，桌面一屏六卡——每日新闻、多平台热榜、音乐播放器、Epic 限免、历史上的今天、站点监控；卡片清单与排列完全由配置数组驱动，删一项即隐藏
 - **自愈音乐播放器**：网易云歌单多源并发竞速拉取、音频探针并行选源、断链自动跳下一首，歌词同步居中、点词跳转进度
+- **接上洛雪音源**：自定义音源脚本跑在 serverless 函数里（Node 原生 `vm`，一个垫片都不用），多音源按成功率分波对冲、赢家一出即掐断其余、直链探活、连续失败熔断；解析到的直链优先播放，全部失效才回落 Meting——公共 Meting 对 VIP 曲只给 30 秒试听片段，这是它解决的核心问题
 - **免 Key 天气**：uapis 聚合接口，按访客 IP 定位到县级、IPv6 正常，含 AQI 与多日高低温平滑曲线
 - **站点监控**：`fetch(no-cors)` 由访客浏览器直连探测各站点连通性与响应耗时，绿红点实时显示，无需任何第三方监控服务
 - **毛玻璃质感与动效**：backdrop-filter 渐变卡片、FluentPlayer 同款「移入才倾斜」的 3D 卡片动效、自定义圆点光标与点击涟漪
@@ -37,10 +40,14 @@ lang: "zh_CN"
 
 ## 部署
 
+静态站 + 一个 serverless 函数（音源解析）：
+
 ```shell
 npm install
 npm run dev      # 本地开发
 npm run build    # 构建产物在 dist/
 ```
+
+Vercel 上 Framework 自动识别 Vite，`api/url.mjs` + `lib/*` 按根目录 `api/` 约定打包成函数，区域选 `hkg1`（离国内接口最近）；前端调**同源** `/api/url`，所以没有跨域、没有第二个域名和证书要管。音源脚本放 `sources/` 或用 `SOURCE_URLS` 指向在线脚本（改脚本不用重新部署），详见仓库 `sources/README.md`。
 
 从选型、布局草图，到这一轮性能治理（含完整的测量方法与踩坑记录）见博客文章[《参考 imsyy/home 重写的个人主页》](/posts/zlion-home-vue3/)。
