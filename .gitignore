@@ -47,7 +47,3 @@ package/
 .codex*
 .claude
 .mimocode
-
-# 音源脚本（第三方作品）：只提交示例，自己的脚本走 SOURCE_URLS 或私有仓库
-sources/*.js
-!sources/source.example.js

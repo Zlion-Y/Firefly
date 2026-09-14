@@ -261,50 +261,7 @@ const managerConfigStr = JSON.stringify({
 
         emit('fm:track', { index: index, track: track, autoPlay: !!autoPlay });
 
-        // 同源洛雪音源解析优先：解析到直链就放到第一顺位直接播，Meting 整条链退居降级位
-        // （只有它失效了才轮到 Meting）——否则 Meting 对 VIP 曲返回的"能播的 30 秒试听片段"
-        // 会抢下播放位置，完整直链永远用不上。
-        // 关掉：config.useBuiltinResolver = false
-        if (config.useBuiltinResolver !== false) {
-            resolveBuiltinUrl(track).then(function (u) {
-                if (ver !== loadVersion) return; // 解析期间已切歌
-                if (u) {
-                    currentTrackUrls = [u].concat(currentTrackUrls.filter(function (x) { return x !== u; }));
-                    currentTrackUrlIndex = 0;
-                }
-                tryPlayCurrentTrackUrl(autoPlay, ver);
-            });
-        } else {
-            tryPlayCurrentTrackUrl(autoPlay, ver);
-        }
-    }
-
-    // ── 同源洛雪音源解析 ──────────────────────────────────────
-    // 调本站自带的 /api/url（api/ + lib/，跟站点一起部署在 Vercel，见 sources/README.md）：
-    // 服务端跑洛雪自定义音源脚本、多音源对冲、直链探活，只回直链不中转音频。
-    // 解析不到（没部署/音源全失败/超时）返回空串，调用方自然回落到 Meting 链。
-    var builtinMemo = {};
-    function resolveBuiltinUrl(track) {
-        var m = (track.url || '').match(/[?&]id=(\d+)/);
-        if (!m) return Promise.resolve('');
-        var id = m[1];
-        var hit = builtinMemo[id];
-        if (hit && Date.now() - hit.at < 600000) return Promise.resolve(hit.url);
-
-        var ctrl = new AbortController();
-        var timer = setTimeout(function () { ctrl.abort(); }, 5000); // 冷启动要装载音源脚本，给宽一点
-        var q = encodeURIComponent(config.quality || '320k');
-        return fetch('/api/url?id=' + encodeURIComponent(id) + '&source=wy&quality=' + q, { signal: ctrl.signal })
-            .then(function (r) { return r.json(); })
-            .then(function (res) {
-                // 部分音源返回 http 直链，https 页面下会被浏览器拦掉，统一升到 https
-                var url = String((res && res.url) || '').replace(/^http:\/\//i, 'https://');
-                if (!url) throw new Error((res && (res.msg || res.error)) || '没有直链');
-                builtinMemo[id] = { url: url, at: Date.now() };
-                return url;
-            })
-            .catch(function () { return ''; })
-            .finally(function () { clearTimeout(timer); });
+        tryPlayCurrentTrackUrl(autoPlay, ver);
     }
 
     // ── Playback controls ────────────────────────────────────

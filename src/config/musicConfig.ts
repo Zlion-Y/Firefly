@@ -20,13 +20,6 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 是否显启用歌词
 	showLyrics: true,
 
-	// 使用同源的洛雪音源解析（api/ + lib/，随本站部署在 Vercel）：
-	// 解析出的直链优先播放，全部失效才回落到 Meting；音源脚本放 sources/ 或配 SOURCE_URLS
-	useBuiltinResolver: true,
-
-	// 请求解析时的音质
-	quality: "320k",
-
 	// Meting API 配置
 	meting: {
 		// Meting API 地址
