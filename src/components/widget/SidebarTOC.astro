@@ -106,11 +106,40 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
     };
   }
 
-  // 视口底部预留，避免卡片紧贴屏幕底边
-  const TOC_VIEWPORT_RESERVE = 16;
+  // 底部预留的上下限（px）：与「导航栏下边 → 内容区顶边」的高度一致，避免卡片贴底
+  const TOC_RESERVE_MIN = 16;
+  const TOC_RESERVE_MAX = 64;
 
   let heightRafId = 0;
   let stickyObserver: ResizeObserver | null = null;
+
+  /**
+   * 顶部留白 = 导航栏下边到内容区顶边的高度，作为卡片下方的预留值，保证上下留白一致。
+   * 内容区顶边取 .content-panel 解析后的 top（即 --content-top，随壁纸模式/首页/断点变化）；
+   * 导航栏下边取实际绘制的 #navbar 底边（fixed 定位，用视口坐标，与滚动位置无关）。
+   * 静态导航栏、全屏壁纸等取不到有效值时退回下限。
+   */
+  function getTopInset(): number {
+    const panel = document.getElementById("content-panel");
+    const navbar = document.getElementById("navbar");
+    if (!panel || !navbar) return TOC_RESERVE_MIN;
+
+    const contentTop = Number.parseFloat(window.getComputedStyle(panel).top);
+    // fixed 导航栏的视口坐标恒定；static 导航栏需换算到文档坐标（否则预留值会随滚动漂移）
+    const navbarRect = navbar.getBoundingClientRect();
+    const navbarBottom =
+      window.getComputedStyle(navbar).position === "fixed"
+        ? navbarRect.bottom
+        : navbarRect.bottom + window.scrollY;
+    if (!Number.isFinite(contentTop) || !Number.isFinite(navbarBottom)) {
+      return TOC_RESERVE_MIN;
+    }
+
+    return Math.min(
+      TOC_RESERVE_MAX,
+      Math.max(TOC_RESERVE_MIN, Math.round(contentTop - navbarBottom)),
+    );
+  }
 
   /**
    * 计算目录滚动区的可用高度并写入 --sidebar-toc-max-h。
@@ -152,7 +181,7 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
     // 只给出可用上限：内容更短时卡片自然收缩，最小值交给 CSS 的 min-height
     // （按 CSS 高度算法，min-height 优先级高于 max-height）
     const available = Math.round(
-      window.innerHeight - stickyTop - chrome - below - TOC_VIEWPORT_RESERVE,
+      window.innerHeight - stickyTop - chrome - below - getTopInset(),
     );
     const next = `${Math.max(0, available)}px`;
 
