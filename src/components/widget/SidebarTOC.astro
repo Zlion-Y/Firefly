@@ -36,7 +36,13 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
   class={className}
   style={style}
 >
-  <div class="toc-scroll-container custom-scrollbar">
+  <div
+    class:list={[
+      "toc-scroll-container",
+      "custom-scrollbar",
+      (encrypted || items.length > 0) && "toc-has-items",
+    ]}
+  >
     <div
       class="toc-content"
       id="sidebar-toc-content"
@@ -81,9 +87,14 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
 <style lang="stylus">
 /* SidebarTOC 特定样式 */
 .toc-scroll-container
-	max-height: calc(100vh - 25rem)
+	/* 目录较长时的上限：由脚本写入 --sidebar-toc-max-h，保证整张卡片完整落在视口内 */
+	max-height: var(--sidebar-toc-max-h, calc(100vh - 25rem))
 	/* 滚动条与内容之间的小间隙（从共享样式挪入，避免影响浮动目录的对称内边距） */
 	padding-right: 0.125rem
+
+/* 目录较少时给卡片一个最小高度，避免卡片过分局促（无目录时保持紧凑） */
+.toc-scroll-container.toc-has-items
+	min-height: var(--sidebar-toc-min-h, 12rem)
 </style>
 
 <script>
@@ -95,12 +106,80 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
     };
   }
 
+  // 视口底部预留，避免卡片紧贴屏幕底边
+  const TOC_VIEWPORT_RESERVE = 16;
+
+  let heightRafId = 0;
+  let stickyObserver: ResizeObserver | null = null;
+
+  /**
+   * 计算目录滚动区的可用高度并写入 --sidebar-toc-max-h。
+   * 目标：目录再长，整张卡片（标题 + 列表）也完整落在视口内，超出部分在卡片内部滚动。
+   * 含多次布局读取，只在初始化 / resize / sticky 列尺寸变化时调用，不挂在滚动路径上。
+   */
+  function updateSidebarTOCHeight(): void {
+    const wrapper = document.getElementById("sidebar-toc");
+    const card = wrapper?.closest("widget-layout") as HTMLElement | null;
+    const scroll = card?.querySelector<HTMLElement>(".toc-scroll-container");
+    if (!card || !scroll) return;
+    // 组件在当前页面被隐藏（showOnPostPage / hideOnNonPostPage）时不参与计算
+    if (card.offsetParent === null) return;
+
+    // sticky 列吸顶后的偏移（top-0 / top-4）
+    const sticky = card.closest<HTMLElement>(".sticky");
+    const stickyTop = sticky
+      ? Number.parseFloat(window.getComputedStyle(sticky).top) || 0
+      : 0;
+
+    // 卡片中不参与滚动的部分（标题、内边距）
+    const chrome = card.offsetHeight - scroll.offsetHeight;
+
+    // sticky 列里位于目录下方的组件同样要完整可见，为它们预留高度
+    let below = 0;
+    if (sticky) {
+      const gap = Number.parseFloat(window.getComputedStyle(sticky).rowGap) || 0;
+      for (
+        let sibling = card.nextElementSibling;
+        sibling;
+        sibling = sibling.nextElementSibling
+      ) {
+        if (sibling instanceof HTMLElement && sibling.offsetParent !== null) {
+          below += sibling.offsetHeight + gap;
+        }
+      }
+    }
+
+    // 只给出可用上限：内容更短时卡片自然收缩，最小值交给 CSS 的 min-height
+    // （按 CSS 高度算法，min-height 优先级高于 max-height）
+    const available = Math.round(
+      window.innerHeight - stickyTop - chrome - below - TOC_VIEWPORT_RESERVE,
+    );
+    const next = `${Math.max(0, available)}px`;
+
+    // 值未变化就不写，避免 ResizeObserver 自触发形成循环
+    if (scroll.style.getPropertyValue("--sidebar-toc-max-h") !== next) {
+      scroll.style.setProperty("--sidebar-toc-max-h", next);
+    }
+  }
+
+  // rAF 合帧，避免 resize / ResizeObserver 连续触发时重复布局读取
+  function scheduleSidebarTOCHeight(): void {
+    if (heightRafId) return;
+    heightRafId = window.requestAnimationFrame(() => {
+      heightRafId = 0;
+      updateSidebarTOCHeight();
+    });
+  }
+
   // 侧栏目录在 #right-sidebar-static 内，不是 swup 容器：站内导航后其 DOM 不被替换。
   // attach() 内部会校验现有锚点是否属于当前正文——新鲜则直接附着（首屏 SSR），
   // 过时或缺失（导航后/加密解密后）则自动回退 DOM 遍历重建，无需在此区分场景。
   function initSidebarTOC() {
     const tocContent = document.getElementById("sidebar-toc-content");
     if (!tocContent) return;
+
+    // 目录卡片高度随视口/兄弟组件变化，切入页面时同步一次
+    scheduleSidebarTOCHeight();
 
     try {
       // 清理旧实例
@@ -161,5 +240,19 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
     document.addEventListener("password:decrypted", () => {
       setTimeout(initSidebarTOC, 200);
     });
+
+    // 视口尺寸变化会改变目录卡片的可用高度
+    window.addEventListener("resize", scheduleSidebarTOCHeight);
+
+    // sticky 列内其它组件展开/收起同样会改变可用高度，跟随其尺寸变化
+    if (!stickyObserver && typeof ResizeObserver !== "undefined") {
+      const stickyHost = document
+        .getElementById("sidebar-toc")
+        ?.closest(".sticky");
+      if (stickyHost) {
+        stickyObserver = new ResizeObserver(scheduleSidebarTOCHeight);
+        stickyObserver.observe(stickyHost);
+      }
+    }
   }
 </script>

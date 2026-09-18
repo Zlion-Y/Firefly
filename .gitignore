@@ -9,6 +9,8 @@ public/vndb-covers/
 
 # dependencies
 node_modules/
+# 仓库内 pnpm store（由本机 pnpm 配置指向工作区，勿提交）
+.pnpm-store/
 
 # logs
 npm-debug.log*
